@@ -3,7 +3,7 @@
 //
 // TITLE:  Lab Starter
 //#############################################################################
-
+// Initials: XI.ZH
 // Included Files
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,6 +250,7 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+// cpu_timer2_isr is called every 5ms 
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 5000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -279,13 +280,14 @@ void main(void)
     // Enable global Interrupts and higher priority real-time debug events
     EINT;  // Enable Global interrupt INTM
     ERTM;  // Enable Global realtime interrupt DBGM
-
+    // Create five global float variables and one global 32-bit integer
     float sinvalue=0;
     float time=0;
     float ampl=3.0;
     float frequency=0.05;
     float offset=0.25;
     int32_t timeint=0;
+    // Create one more global float variable
     float satvalue=0;
 
     // IDLE loop. Just sit and loop forever (optional):
@@ -296,6 +298,8 @@ void main(void)
             time=timeint*0.25;
             sinvalue=ampl*sin(2*PI*frequency*time)+offset;
             satvalue=saturate(sinvalue,2.65);
+	    // time int is a 32-bit integer; time with 2 digits of precison
+            // sinvalue with 3 digits of precison; satvalue with 2 digits of precison
 			serial_printf(&SerialA,"Timeint= %ld. Time= %.2f, Input= %.3f Satout= %.2f\r\n",timeint,time,sinvalue,satvalue);
             UARTPrint = 0;
         }
@@ -372,7 +376,7 @@ __interrupt void cpu_timer2_isr(void)
 		UARTPrint = 1;
 	}
 }
-
+// global function saturate have two float parameter,input and saturation_limit
 float saturate(float input,float saturation_limit)
 {
     if(input>saturation_limit)
@@ -388,4 +392,5 @@ float saturate(float input,float saturation_limit)
         return input;
     }
 }
-
+// Exercise 3 - part 3
+// 	3721*5ms=18605ms=18.605s
