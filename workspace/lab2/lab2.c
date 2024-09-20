@@ -257,6 +257,7 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+	//ZHX Period is 1000us(1ms) which means CPU timer 2's interrupt function is called once every millisecond
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -361,7 +362,7 @@ __interrupt void cpu_timer1_isr(void)
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
-
+// ZHX These four lines illustrate the importance the breakpoint. We can add a breakpoint by double clicking the left grey area and single step the code by F5.
     x4=x3+2.0;
     x3=x4+1.3;
     x1=9*x2;
@@ -373,11 +374,13 @@ __interrupt void cpu_timer2_isr(void)
 //ZHX assign this variable to the value return from the function
 buttondata = ReadPushButtons();
     SetLEDRowsOnOff(numTimer2calls);
+	// ZHX If button 2 and 3 are pressed,stop incrementing the numTImer2calls. 6 in binary is 0110
     if((buttondata&0x6)==0x6){
     }
     else{
         numTimer2calls++;
     }
+	// ZHX the serial_printf function in the main will be called every 100th time the timer 2 interrupt called
 	if ((CpuTimer2.InterruptCount % 100) == 0) {
 		UARTPrint = 1;
 	}
