@@ -25,7 +25,7 @@
 #define HALFPI      1.5707963267948966192313216916398
 // The Launchpad's CPU Frequency set to 200 you should not change this value
 #define LAUNCHPAD_CPU_FREQUENCY 200
-// ZHX These float variable are shown to emphasize the importance of breakpoints in CCS
+// ZHX EX3.3 These float variable are shown to emphasize the importance of breakpoints in CCS
 float x1=6.0;
 float x2=2.3;
 float x3=7.3;
@@ -35,7 +35,7 @@ __interrupt void cpu_timer0_isr(void);
 __interrupt void cpu_timer1_isr(void);
 __interrupt void cpu_timer2_isr(void);
 __interrupt void SWI_isr(void);
-// ZHX Predefiniton for function used in the main function
+// ZHX EX1.4 Predefiniton for two functions used in the main function
 void SetLEDRowsOnOff(int16_t rows);
 int16_t ReadPushButtons(void);
 // Count variables
@@ -44,9 +44,9 @@ uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
-//ZHX this global variable is used for the function cpu_timer2_isr(void)
+//ZHX EX1.3 create this global variable is used for the function cpu_timer2_isr(void)
 int32_t numTimer2calls=0;
-//ZHX this global variable will be assign from ReadPush Burrons(void) function in the main
+//ZHX EX1.5 this global variable will be assign from ReadPushBurrons(void) function in the main
 int16_t buttondata=0;
 
 void main(void)
@@ -257,7 +257,8 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
-	//ZHX Period is 1000us(1ms) which means CPU timer 2's interrupt function is called once every millisecond
+	//ZHX EX4 Period is 1000us(1ms) which means CPU timer 2's interrupt function is called once every millisecond
+	//ZHX EX1.2 the time register count up by 1 every 1/200000000s,PRD and TIM are both 32-bit unsigned integer, so the largest period in second is(2^32-1)/200000000
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -293,7 +294,8 @@ void main(void)
     while(1)
     {
         if (UARTPrint == 1 ) {
-		// ZHX the serial_printf function displays the 32-bit integer numTimer2calls,with %ld formatter.Besides,numRXA variable is also printed in the default function.
+		// ZHX EX1.3 the serial_printf function displays the 32-bit integer numTimer2calls,with %ld formatter.
+		// Besides,numRXA variable is also printed in the default function.
 			serial_printf(&SerialA,"numTimer2calls:%ld Num SerialRX: %ld buttondata: %d\r\n",numTimer2calls,numRXA,buttondata);
             UARTPrint = 0;
         }
@@ -362,7 +364,7 @@ __interrupt void cpu_timer1_isr(void)
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
-// ZHX These four lines illustrate the importance the breakpoint. We can add a breakpoint by double clicking the left grey area and single step the code by F5.
+// ZHX EX3.3 These four lines illustrate the importance the breakpoint. We can add a breakpoint by double clicking the left grey area and single step the code by F5.
     x4=x3+2.0;
     x3=x4+1.3;
     x1=9*x2;
@@ -371,34 +373,38 @@ __interrupt void cpu_timer2_isr(void)
 // Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
     CpuTimer2.InterruptCount++;
-//ZHX assign this variable to the value return from the function
+//ZHX EX1.5 assign this variable to the value return from the function
 buttondata = ReadPushButtons();
+//ZHX EX1.5 Then pass this variable to SetLEDRowsOnOff function,and we will see its binary value showed on the led
+// SetLEDRowsOnOff(buttondata);
+// ZHX EX2.2 pass the numTimer2calls to SetLEDRowsOnOff function,it will show the least five significant bits for numTimer2calls
     SetLEDRowsOnOff(numTimer2calls);
-	// ZHX If button 2 and 3 are pressed,stop incrementing the numTImer2calls. 6 in binary is 0110
+	// ZHX EX2.2 If button 2 and 3 are pressed,stop incrementing the numTImer2calls. 6 in binary is 0110
     if((buttondata&0x6)==0x6){
     }
     else{
         numTimer2calls++;
     }
-	// ZHX the serial_printf function in the main will be called every 100th time the timer 2 interrupt called
+	//ZHX EX4 the serial_printf function in the main will be called every 100th time the timer 2 interrupt called.
+	//ZHX EX4 the &(mod) operator returns the remainder
 	if ((CpuTimer2.InterruptCount % 100) == 0) {
 		UARTPrint = 1;
 	}
 }
 
 void SetLEDRowsOnOff(int16_t rows)
-// ZHX This function use five least significnt bits of 'rows'(16-bit integer) to determine whether five LED rows are on.
+// ZHX EX1.4 This function use five least significnt bits of 'rows'(16-bit integer) to determine whether five LED rows are on.
 {
     if((rows&0x1)==0x1)
     {
-	// ZHX the bit 0 determine the bottom most row's state, if the bit 0 is 1, this row of LEDs should be ON
+	// ZHX EX1.4 the bit 0 determine the bottom most row's state, if the bit 0 is 1, this row of LEDs should be ON
         GpioDataRegs.GPASET.bit.GPIO22 = 1;
         GpioDataRegs.GPESET.bit.GPIO130 = 1;
         GpioDataRegs.GPBSET.bit.GPIO60 = 1;
     }
     else
     {
-	// ZHX this row of LEDs should be OFF
+	// ZHX EX1.4 this row of LEDs should be OFF
         GpioDataRegs.GPACLEAR.bit.GPIO22 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO130 = 1;
         GpioDataRegs.GPBCLEAR.bit.GPIO60 = 1;
@@ -406,14 +412,14 @@ void SetLEDRowsOnOff(int16_t rows)
 
     if((rows&0x2)==0x2)
     {
-	// ZHX the bit 1 determine the next up row's state, if the bit 1 is 1, this row of LEDs should be ON
+	// ZHX EX1.4 the bit 1 determine the next up row's state, if the bit 1 is 1, this row of LEDs should be ON
         GpioDataRegs.GPCSET.bit.GPIO94 = 1;
         GpioDataRegs.GPESET.bit.GPIO131 = 1;
         GpioDataRegs.GPBSET.bit.GPIO61 = 1;
     }
     else
     {
-	// ZHX this row of LEDs should be OFF
+	// ZHX EX1.4 this row of LEDs should be OFF
         GpioDataRegs.GPCCLEAR.bit.GPIO94 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO131 = 1;
         GpioDataRegs.GPBCLEAR.bit.GPIO61 = 1;
@@ -421,14 +427,14 @@ void SetLEDRowsOnOff(int16_t rows)
 
     if((rows&0x4)==0x4)
     {
-	// ZHX the bit 2 determine the middle row's state, if the bit 2 is 1, this row of LEDs should be ON
+	// ZHX EX1.4 the bit 2 determine the middle row's state, if the bit 2 is 1, this row of LEDs should be ON
         GpioDataRegs.GPCSET.bit.GPIO95 = 1;
         GpioDataRegs.GPASET.bit.GPIO25 = 1;
         GpioDataRegs.GPESET.bit.GPIO157 = 1;
     }
     else
     {
-	// ZHX this row of LEDs should be OFF
+	// ZHX EX1.4 this row of LEDs should be OFF
         GpioDataRegs.GPCCLEAR.bit.GPIO95 = 1;
         GpioDataRegs.GPACLEAR.bit.GPIO25 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO157 = 1;
@@ -436,14 +442,14 @@ void SetLEDRowsOnOff(int16_t rows)
 
     if((rows&0x8)==0x8)
     {
-	// ZHX the bit 3 determine the second from the top row's state, if the bit 3 is 1, this row of LEDs should be ON
+	// ZHX EX1.4 the bit 3 determine the second from the top row's state, if the bit 3 is 1, this row of LEDs should be ON
         GpioDataRegs.GPDSET.bit.GPIO97 = 1;
         GpioDataRegs.GPASET.bit.GPIO26 = 1;
         GpioDataRegs.GPESET.bit.GPIO158 = 1;
     }
     else
     {
-	// ZHX this row of LEDs should be OFF
+	// ZHX EX1.4 this row of LEDs should be OFF
         GpioDataRegs.GPDCLEAR.bit.GPIO97 = 1;
         GpioDataRegs.GPACLEAR.bit.GPIO26 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO158 = 1;
@@ -451,35 +457,35 @@ void SetLEDRowsOnOff(int16_t rows)
 
     if((rows&0x10)==0x10)
     {
-	// ZHX the bit 4 determine the top row's state, if the bit 4 is 1, this row of LEDs should be ON
+	// ZHX EX1.4 the bit 4 determine the top row's state, if the bit 4 is 1, this row of LEDs should be ON
         GpioDataRegs.GPDSET.bit.GPIO111 = 1;
         GpioDataRegs.GPASET.bit.GPIO27 = 1;
         GpioDataRegs.GPESET.bit.GPIO159 = 1;
     }
     else
     {
-	// ZHX this row of LEDs should be OFF
+	// ZHX EX1.4 this row of LEDs should be OFF
         GpioDataRegs.GPDCLEAR.bit.GPIO111 = 1;
         GpioDataRegs.GPACLEAR.bit.GPIO27 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO159 = 1;
     }
 }
-//ZHX this function use the least significant 4 bits of 'val' to indicate the state of 4 push buttons
+//ZHX EX1.4 this function use the least significant 4 bits of 'val' to indicate the state of 4 push buttons. When the push button is not pressed the GPIO pins read as high voltage due to an internal pullup register inthe pin
 int16_t ReadPushButtons(void){
     int16_t val = 0x0;
-// ZHX If switch 1 is pressed, perform a bitwise OR operation between the local variable and 0x1
+// ZHX EX1.4 If switch 1 is pressed, perform a bitwise OR operation between the local variable and 0x1
     if(GpioDataRegs.GPADAT.bit.GPIO4==0){
         val = val|0x1;
     }
-// ZHX If switch 2 is pressed, perform a bitwise OR operation between the local variable and 0x2
+// ZHX EX1.4 If switch 2 is pressed, perform a bitwise OR operation between the local variable and 0x2
     if(GpioDataRegs.GPADAT.bit.GPIO5==0){
         val = val|0x2;
     }
-// ZHX If switch 3 is pressed, perform a bitwise OR operation between the local variable and 0x4
+// ZHX EX1.4 If switch 3 is pressed, perform a bitwise OR operation between the local variable and 0x4
     if(GpioDataRegs.GPADAT.bit.GPIO6==0){
         val = val|0x4;
     }
-// ZHX If switch 4 is pressed, perform a bitwise OR operation between the local variable and 0x8
+// ZHX EX1.4 If switch 4 is pressed, perform a bitwise OR operation between the local variable and 0x8
     if(GpioDataRegs.GPADAT.bit.GPIO7==0){
         val = val|0x8;
     }
