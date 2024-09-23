@@ -41,6 +41,11 @@ uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 int16_t updown=1;
 int16_t dancount=0;
+
+
+void setEPWM2A(float controleffort);
+void setEPWM2A(float controleffort);
+
 void main(void)
 {
 
@@ -473,4 +478,20 @@ __interrupt void cpu_timer2_isr(void)
 		UARTPrint = 1;
 	}
 }
+void setEPWM2A(float controleffort){
+	if (controleffort>10){
+		controleffort=10;
+	}
+	if (controleffort<-10){
+		controleffort=10;
+	}
+	EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 
+void setEPWM2B(float controleffort){
+	if (controleffort>10){
+		controleffort=10;
+	}
+	if (controleffort<-10){
+		controleffort=10;
+	}
+	EPwm2Regs.CMPA.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
