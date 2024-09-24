@@ -471,7 +471,19 @@ __interrupt void cpu_timer2_isr(void)
         EPwm12Regs.CMPA.bit.CMPA=dancount;
     }
 
-
+if (upDown==1){
+	dancount2 = dancount2+0.1;
+	        if (dancount2>10) {
+	            upDown=0;
+	        }
+	    } else {
+	       dancount2= dancount2-0.1;
+	        if (dancount2<-10) {
+	            upDown= 1;
+	        }
+	    }
+	setEPWM2A(dancount2);
+	setEPWM2B(dancount2);
     CpuTimer2.InterruptCount++;
 	
 	if ((CpuTimer2.InterruptCount % 10) == 0) {
