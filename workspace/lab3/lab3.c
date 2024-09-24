@@ -41,10 +41,10 @@ uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 int16_t updown=1;
 int16_t dancount=0;
-
+float dancount2=0;
 
 void setEPWM2A(float controleffort);
-void setEPWM2A(float controleffort);
+void setEPWM2B(float controleffort);
 
 void main(void)
 {
@@ -456,7 +456,7 @@ __interrupt void cpu_timer2_isr(void)
 	// Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
 
-    if(updown==1){
+    /*if(updown==1){
         dancount++;
         if(dancount>=2500){
             updown=0;
@@ -469,21 +469,23 @@ __interrupt void cpu_timer2_isr(void)
             updown=1;
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
-    }
+    }*/
 
-if (upDown==1){
-	dancount2 = dancount2+0.1;
-	        if (dancount2>10) {
-	            upDown=0;
-	        }
-	    } else {
-	       dancount2= dancount2-0.1;
-	        if (dancount2<-10) {
-	            upDown= 1;
+    if (updown==1){
+        dancount2 = dancount2+0.001;
+	    if (dancount2>10) {
+	        updown=0;
+	    }
+	    }
+    else {
+        dancount2= dancount2-0.001;
+	    if (dancount2<-10) {
+	        updown= 1;
 	        }
 	    }
 	setEPWM2A(dancount2);
 	setEPWM2B(dancount2);
+
     CpuTimer2.InterruptCount++;
 	
 	if ((CpuTimer2.InterruptCount % 10) == 0) {
@@ -498,6 +500,7 @@ void setEPWM2A(float controleffort){
 		controleffort=10;
 	}
 	EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
+}
 
 void setEPWM2B(float controleffort){
 	if (controleffort>10){
@@ -506,4 +509,5 @@ void setEPWM2B(float controleffort){
 	if (controleffort<-10){
 		controleffort=10;
 	}
-	EPwm2Regs.CMPA.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
+	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
+}
