@@ -46,6 +46,9 @@ float dancount2=0;
 void setEPWM2A(float controleffort);
 void setEPWM2B(float controleffort);
 
+void set EPWM8A_RCServo(float angle);
+void set EPWM8B_RCServo(float angle);
+
 void main(void)
 {
 
@@ -305,17 +308,17 @@ void main(void)
 
 
 
-    EPwm8Regs.TBCTL.bit.CLKDIV=0;
+    EPwm8Regs.TBCTL.bit.CLKDIV=4;
     EPwm8Regs.TBCTL.bit.PHSEN=0;
     EPwm8Regs.TBCTL.bit.CTRMODE=0;
     EPwm8Regs.TBCTL.bit.FREE_SOFT=2;
 
     EPwm8Regs.TBCTR=0;
 
-    EPwm8Regs.TBPRD=2500;
+    EPwm8Regs.TBPRD=62500;
 
-    EPwm8Regs.CMPA.bit.CMPA=0;
-    EPwm8Regs.CMPB.bit.CMPB=0;
+    EPwm8Regs.CMPA.bit.CMPA=5000;
+    EPwm8Regs.CMPB.bit.CMPB=5000;
 
     EPwm8Regs.AQCTLA.bit.CAU=1;
     EPwm8Regs.AQCTLA.bit.ZRO=2;
@@ -326,7 +329,7 @@ void main(void)
 
 
 
-    EPwm9Regs.TBCTL.bit.CLKDIV=0;
+    EPwm9Regs.TBCTL.bit.CLKDIV=1;
     EPwm9Regs.TBCTL.bit.PHSEN=0;
     EPwm9Regs.TBCTL.bit.CTRMODE=0;
     EPwm9Regs.TBCTL.bit.FREE_SOFT=2;
@@ -335,7 +338,7 @@ void main(void)
 
     EPwm9Regs.TBPRD=2500;
 
-    EPwm9Regs.CMPA.bit.CMPA=0;
+    // EPwm9Regs.CMPA.bit.CMPA=0;
 
     EPwm9Regs.AQCTLA.bit.CAU=1;
     EPwm9Regs.AQCTLA.bit.ZRO=2;
@@ -519,4 +522,15 @@ void set EPWM8A_RCServo(float angle){
 	if(angle < -90) {
 		angle = -90;
 	}
-	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180)/180*0.08*(float)(EPwm8Regs.TBPRD))
+	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD))
+		}
+
+void set EPWM8B_RCServo(float angle){
+	if(angle > 90) {
+		angle = 90;
+	}
+	if(angle < -90) {
+		angle = -90;
+	}
+	EPwm8Regs.CMPB.bit.CMPB =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD))
+		}
