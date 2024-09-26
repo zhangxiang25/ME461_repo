@@ -256,7 +256,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
-    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -511,3 +511,12 @@ void setEPWM2B(float controleffort){
 	}
 	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
+
+void set EPWM8A_RCServo(float angle){
+	if(angle > 90) {
+		angle = 90;
+	}
+	if(angle < -90) {
+		angle = -90;
+	}
+	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180)/180*0.08*(float)(EPwm8Regs.TBPRD))
