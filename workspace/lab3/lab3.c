@@ -16,7 +16,7 @@
 #include "device.h"
 #include "F28379dSerial.h"
 #include "LEDPatterns.h"
-#include "song.h"
+//#include "song.h"
 #include "dsp.h"
 #include "fpu32/fpu_rfft.h"
 
@@ -42,17 +42,101 @@ uint16_t LEDdisplaynum = 0;
 int16_t updown=1;
 int16_t dancount=0;
 float dancount2=0;
+float dancount3=0;
+
+int16_t notecount=0;
 
 void setEPWM2A(float controleffort);
 void setEPWM2B(float controleffort);
 
-void set EPWM8A_RCServo(float angle);
-void set EPWM8B_RCServo(float angle);
+void setEPWM8A_RCServo(float angle);
+void setEPWM8B_RCServo(float angle);
+
+#define C4NOTE ((uint16_t)(((50000000/2)/2)/261.63))
+#define D4NOTE ((uint16_t)(((50000000/2)/2)/293.66))
+#define E4NOTE ((uint16_t)(((50000000/2)/2)/329.63))
+#define F4NOTE ((uint16_t)(((50000000/2)/2)/349.23))
+#define G4NOTE ((uint16_t)(((50000000/2)/2)/392.00))
+#define A4NOTE ((uint16_t)(((50000000/2)/2)/440.00))
+#define B4NOTE ((uint16_t)(((50000000/2)/2)/493.88))
+#define C5NOTE ((uint16_t)(((50000000/2)/2)/523.25))
+#define D5NOTE ((uint16_t)(((50000000/2)/2)/587.33))
+#define E5NOTE ((uint16_t)(((50000000/2)/2)/659.25))
+#define F5NOTE ((uint16_t)(((50000000/2)/2)/698.46))
+#define G5NOTE ((uint16_t)(((50000000/2)/2)/783.99))
+#define A5NOTE ((uint16_t)(((50000000/2)/2)/880.00))
+#define B5NOTE ((uint16_t)(((50000000/2)/2)/987.77))
+#define F4SHARPNOTE ((uint16_t)(((50000000/2)/2)/369.99))
+#define G4SHARPNOTE ((uint16_t)(((50000000/2)/2)/415.3))
+#define A4FLATNOTE ((uint16_t)(((50000000/2)/2)/415.3))
+#define C5SHARPNOTE ((uint16_t)(((50000000/2)/2)/554.37))
+#define A5FLATNOTE ((uint16_t)(((50000000/2)/2)/830.61))
+#define OFFNOTE 0
+#define SONG_LENGTH 68
+uint16_t songarray[SONG_LENGTH] = {
+C4NOTE,
+C4NOTE,
+C4NOTE,
+C4NOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+C4NOTE,
+C4NOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+C4NOTE,
+C4NOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+OFFNOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+E4NOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+D4NOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+F4NOTE,
+};
+
 
 void main(void)
 {
-
-
 
     // PLL, WatchDog, enable Peripheral Clocks
     // This example function is found in the F2837xD_SysCtrl.c file.
@@ -336,12 +420,12 @@ void main(void)
 
     EPwm9Regs.TBCTR=0;
 
-    EPwm9Regs.TBPRD=2500;
+    EPwm9Regs.TBPRD=0;
 
     // EPwm9Regs.CMPA.bit.CMPA=0;
 
-    EPwm9Regs.AQCTLA.bit.CAU=1;
-    EPwm9Regs.AQCTLA.bit.ZRO=2;
+    EPwm9Regs.AQCTLA.bit.CAU=0;
+    EPwm9Regs.AQCTLA.bit.ZRO=3;
 
     EPwm9Regs.TBPHS.bit.TBPHS=0;
 
@@ -448,8 +532,17 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-		
-    CpuTimer1.InterruptCount++;
+
+
+	EPwm9Regs.TBPRD=songarray[notecount];
+	if (notecount<SONG_LENGTH){
+	    notecount++;
+	}
+
+	if (notecount==SONG_LENGTH){
+	    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,0);
+	    GpioDataRegs.GPACLEAR.bit.GPIO16=1;
+	}
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
@@ -472,16 +565,16 @@ __interrupt void cpu_timer2_isr(void)
             updown=1;
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
-    }*/
+    }
 
     if (updown==1){
-        dancount2 = dancount2+0.001;
+        dancount2 = dancount2+0.01;
 	    if (dancount2>10) {
 	        updown=0;
 	    }
 	    }
     else {
-        dancount2= dancount2-0.001;
+        dancount2= dancount2-0.01;
 	    if (dancount2<-10) {
 	        updown= 1;
 	        }
@@ -489,9 +582,27 @@ __interrupt void cpu_timer2_isr(void)
 	setEPWM2A(dancount2);
 	setEPWM2B(dancount2);
 
+	*/
+
+    if (updown==1){
+            dancount3 = dancount3+0.05;
+            if (dancount3>90) {
+                updown=0;
+            }
+            }
+        else {
+            dancount3= dancount3-0.05;
+            if (dancount3<-90) {
+                updown= 1;
+                }
+            }
+
+    setEPWM8A_RCServo(dancount3);
+    setEPWM8B_RCServo(dancount3);
+
     CpuTimer2.InterruptCount++;
 	
-	if ((CpuTimer2.InterruptCount % 10) == 0) {
+	if ((CpuTimer2.InterruptCount % 100) == 0) {
 		UARTPrint = 1;
 	}
 }
@@ -515,22 +626,24 @@ void setEPWM2B(float controleffort){
 	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
 
-void set EPWM8A_RCServo(float angle){
+void setEPWM8A_RCServo(float angle){
 	if(angle > 90) {
 		angle = 90;
 	}
 	if(angle < -90) {
 		angle = -90;
 	}
-	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD))
+    //EPwm8Regs.CMPB.bit.CMPB =(int16_t)((0.08+(0.04*angle/90))*(float)(EPwm8Regs.TBPRD));
+	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
 		}
 
-void set EPWM8B_RCServo(float angle){
+void setEPWM8B_RCServo(float angle){
 	if(angle > 90) {
 		angle = 90;
 	}
 	if(angle < -90) {
 		angle = -90;
 	}
-	EPwm8Regs.CMPB.bit.CMPB =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD))
+	//EPwm8Regs.CMPB.bit.CMPB =(int16_t)((0.08+(0.04*angle/90))*(float)(EPwm8Regs.TBPRD));
+	EPwm8Regs.CMPB.bit.CMPB =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
 		}
