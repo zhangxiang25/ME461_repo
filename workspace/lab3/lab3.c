@@ -43,15 +43,14 @@ int16_t updown=1;
 int16_t dancount=0;
 float dancount2=0;
 float dancount3=0;
-
 int16_t notecount=0;
-
+//ZHX EX2 predefinition for functions
 void setEPWM2A(float controleffort);
 void setEPWM2B(float controleffort);
-
+//ZHX EX3 predefinition for functions
 void setEPWM8A_RCServo(float angle);
 void setEPWM8B_RCServo(float angle);
-
+//ZHX EX4 
 #define C4NOTE ((uint16_t)(((50000000/2)/2)/261.63))
 #define D4NOTE ((uint16_t)(((50000000/2)/2)/293.66))
 #define E4NOTE ((uint16_t)(((50000000/2)/2)/329.63))
@@ -618,10 +617,10 @@ void main(void)
     EPwm9Regs.TBCTR=0;
 
     EPwm9Regs.TBPRD=0;
-
+	// ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
     // EPwm9Regs.CMPA.bit.CMPA=0;
 
-    EPwm9Regs.AQCTLA.bit.CAU=0;
+    EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 
     EPwm9Regs.AQCTLA.bit.ZRO=3;
 
     EPwm9Regs.TBPHS.bit.TBPHS=0;
