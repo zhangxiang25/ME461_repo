@@ -389,17 +389,17 @@ void main(void)
 
     EPwm2Regs.TBPHS.bit.TBPHS=0;
 
-	// ZHX EX1 EPWM8A and 8B controls 2 rc servos
-    EPwm8Regs.TBCTL.bit.CLKDIV=4;
+	// ZHX EX1 EPWM8A and 8B controls 2 rc servos. 
+    EPwm8Regs.TBCTL.bit.CLKDIV=4; // ZHX EX3 the frequency of EPWM8 is 50MHz 50000000/2^4=3125000
     EPwm8Regs.TBCTL.bit.PHSEN=0;
     EPwm8Regs.TBCTL.bit.CTRMODE=0;
     EPwm8Regs.TBCTL.bit.FREE_SOFT=2;
 
     EPwm8Regs.TBCTR=0;
+	// ZHX EX3 we want the servo carrier frequency be 50Hz 50*TBPRD=3125000,so TBPRD=62500
+    EPwm8Regs.TBPRD=62500; // ZHX EX3 TBPRD is a 16-bit register,the largest number we can set is 2^16-1=65535
 
-    EPwm8Regs.TBPRD=62500;
-
-    EPwm8Regs.CMPA.bit.CMPA=5000;
+    EPwm8Regs.CMPA.bit.CMPA=5000;// ZHX EX3 the intialvalue of CMPA and CMPB is commanding the servo to 8% duty cycle 0.08*62500(TBPRD)=5000
     EPwm8Regs.CMPB.bit.CMPB=5000;
 
     EPwm8Regs.AQCTLA.bit.CAU=1;
@@ -564,7 +564,7 @@ __interrupt void cpu_timer2_isr(void)
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
     }
-// 
+// ZHX EX2 we create a global variable dancount2. when the updown is equal to 1,count up. we gradually increase the dancount2 to 10 with step of 0.01 then switch to decreasing dancount2 to -10 then repeat.
     if (updown==1){
         dancount2 = dancount2+0.01;
 	    if (dancount2>10) {
@@ -581,7 +581,7 @@ __interrupt void cpu_timer2_isr(void)
 	setEPWM2B(dancount2);
 
 	*/
-
+	//ZHX EX3 dancount3 variable is for Servo motor,gradually change this value so the servo is driven back and forth
     if (updown==1){
             dancount3 = dancount3+0.05;
             if (dancount3>90) {
@@ -604,6 +604,7 @@ __interrupt void cpu_timer2_isr(void)
 		UARTPrint = 1;
 	}
 }
+// ZHX EX2 following 2 functions are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
 void setEPWM2A(float controleffort){
 	if (controleffort>10){
 		controleffort=10;
@@ -611,9 +612,10 @@ void setEPWM2A(float controleffort){
 	if (controleffort<-10){
 		controleffort=10;
 	}
+	//ZHX EX2 when the control effort is -10, duty cycle is 0%;0 is 50% and 10 is 100%. CMPA&TBPRD are 16 bit integer and controleffort is a float.
 	EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
-
+// ZHX EX2 similar to void setEPWM2A(float controleffort)
 void setEPWM2B(float controleffort){
 	if (controleffort>10){
 		controleffort=10;
@@ -623,7 +625,7 @@ void setEPWM2B(float controleffort){
 	}
 	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
-
+// ZHX EX3 following two functions will firstly saturate angle between -90 to 90 in case the value outside this range, then find relationship between angle and CMPA.
 void setEPWM8A_RCServo(float angle){
 	if(angle > 90) {
 		angle = 90;
@@ -631,10 +633,10 @@ void setEPWM8A_RCServo(float angle){
 	if(angle < -90) {
 		angle = -90;
 	}
-    //EPwm8Regs.CMPB.bit.CMPB =(int16_t)((0.08+(0.04*angle/90))*(float)(EPwm8Regs.TBPRD));
+	// ZHX EX3 angle is a variable between -90 to 90.-90 equals 4% duty cycle, 0 equals 8%, 90 equals 12%
 	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
 		}
-
+//ZHX EX3 similar to void setEPWM8A_RCServo()
 void setEPWM8B_RCServo(float angle){
 	if(angle > 90) {
 		angle = 90;
@@ -642,6 +644,5 @@ void setEPWM8B_RCServo(float angle){
 	if(angle < -90) {
 		angle = -90;
 	}
-	//EPwm8Regs.CMPB.bit.CMPB =(int16_t)((0.08+(0.04*angle/90))*(float)(EPwm8Regs.TBPRD));
 	EPwm8Regs.CMPB.bit.CMPB =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
 		}
