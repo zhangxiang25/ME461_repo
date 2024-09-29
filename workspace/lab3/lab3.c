@@ -16,6 +16,7 @@
 #include "device.h"
 #include "F28379dSerial.h"
 #include "LEDPatterns.h"
+// ZHX EX4 We are going to play a long song in our code.
 //#include "song.h"
 #include "dsp.h"
 #include "fpu32/fpu_rfft.h"
@@ -541,6 +542,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
+	//ZHX EX4 timer1 is called every 125 milliseconds
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
@@ -620,8 +622,8 @@ void main(void)
 	// ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
     // EPwm9Regs.CMPA.bit.CMPA=0;
 
-    EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 
-    EPwm9Regs.AQCTLA.bit.ZRO=3;
+    EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 when CMPA is reached, no action is needed
+    EPwm9Regs.AQCTLA.bit.ZRO=3; // ZHX EX4 when TBCTR=0, set to 3 to toggle the LOW or HIGH output of the PMW. This is to show on the oscilliscope the operation signal
 
     EPwm9Regs.TBPHS.bit.TBPHS=0;
 
@@ -728,16 +730,15 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-
-
+// ZHX EX4 set TBPRD to the value currently stored in songarray(we are in the beginning of the song)
 	EPwm9Regs.TBPRD=songarray[notecount];
 	if (notecount<SONG_LENGTH){
-	    notecount++;
+	    notecount++; //ZHX EX4 increasing notecount to keep track where are we in the song
 	}
 
 	if (notecount==SONG_LENGTH){
-	    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,0);
-	    GpioDataRegs.GPACLEAR.bit.GPIO16=1;
+	    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,0);// ZHX EX4 when the song ended,change the pin from EPWM9A to GPIO16
+	    GpioDataRegs.GPACLEAR.bit.GPIO16=1; // ZHX EX4 Set GPIO16 to low so the buzzer does not make any noise
 	}
 }
 
