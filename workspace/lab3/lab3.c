@@ -68,7 +68,6 @@ void setEPWM8B_RCServo(float angle);
 #define B5NOTE ((uint16_t)(((50000000/2)/2)/987.77))
 #define E6NOTE ((uint16_t)(((50000000/2)/2)/1318.51))
 #define F4SHARPNOTE ((uint16_t)(((50000000/2)/2)/369.99))
-#define G4SHARPNOTE ((uint16_t)(((50000000/2)/2)/415.3))
 #define A4FLATNOTE ((uint16_t)(((50000000/2)/2)/415.3))
 #define C5SHARPNOTE ((uint16_t)(((50000000/2)/2)/554.37))
 #define D5SHARPNOTE ((uint16_t)(((50000000/2)/2)/622.25))
