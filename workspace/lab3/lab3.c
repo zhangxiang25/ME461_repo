@@ -552,18 +552,19 @@ void main(void)
 
     init_serialSCIA(&SerialA,115200);
     // ZHX EX1 set up the EPWM registers for EPWM12A
-	EPwm12Regs.TBCTL.bit.CLKDIV=0; // set the CLKDIV be1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
+	// ZHX EX1 for the definition of TBCTL and AQCTLA,we can type EPwm12Regs then selecting"Open declaration" 
+	EPwm12Regs.TBCTL.bit.CLKDIV=0; // set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
 	EPwm12Regs.TBCTL.bit.PHSEN=0; // disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
-	EPwm12Regs.TBCTL.bit.CTRMODE=0; // count up mode. down count mode is 1;up-down count mode is 2; freeze counter operation is 3
-	EPwm12Regs.TBCTL.bit.FREE_SOFT=2; // free run so that the PWM continues when you set a break point in your code
+	EPwm12Regs.TBCTL.bit.CTRMODE=0; // count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+	EPwm12Regs.TBCTL.bit.FREE_SOFT=2; // free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
+	// 0 means stop after the next time -base counter increment or decrement.1 meansStop then counter completes a whole cycle
+	EPwm12Regs.TBCTR=0; // time base counter register is 0. TBCTR is a 16-bit register
+	EPwm12Regs.TBPRD=2500; // time base period register is 2500. 
+	// we know the clock source has a frequency of 50MHz and we need the period of PWM signal be 20kHz. 20k*TBPRD=50M. TBPRD=2500
 
-	EPwm12Regs.TBCTR=0; // time base counter register is 0
+    EPwm12Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0%.CMPA(counter compare a register) determine the duty cycle
 
-	EPwm12Regs.TBPRD=2500; // time base period register is 2500. we know the clock source has a frequency of 50MHz and we need the period of PWM signal be 20kHz.20k*2500=50M
-
-    EPwm12Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0%
-
-    EPwm12Regs.AQCTLA.bit.CAU=1; // when TBCTR=CMPA clear the signal pin
+    EPwm12Regs.AQCTLA.bit.CAU=1; // when TBCTR=CMPA clear the signal pin. CAU takes up 2 bits of the AQCTLA register,4 values can be assigned to it.
 	EPwm12Regs.AQCTLA.bit.ZRO=2; // when TBCTR=0, make the pin be set
 
     EPwm12Regs.TBPHS.bit.TBPHS=0; // set the phase to 0
