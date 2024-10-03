@@ -565,11 +565,14 @@ void main(void)
     EPwm12Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0%.CMPA(counter compare a register) determine the duty cycle
 
     EPwm12Regs.AQCTLA.bit.CAU=1; // when TBCTR=CMPA clear the signal pin. CAU takes up 2 bits of the AQCTLA register,4 values can be assigned to it.
-	EPwm12Regs.AQCTLA.bit.ZRO=2; // when TBCTR=0, make the pin be set
+// 0 is do nothing; 2 is set EPWMxA to high; 3 is toggle EPWNxA output
+    EPwm12Regs.AQCTLA.bit.ZRO=2; // when TBCTR=0, make the pin be set, force output high. ZRO takes up 2 bits,4 values can be assigned to it.
+// 0 is do nothing; 1 is clear(force EPWMxA output low; 3 is toogle EPWMxA output.
 
-    EPwm12Regs.TBPHS.bit.TBPHS=0; // set the phase to 0
-
-	// ZHX EX1 EPWM2A and 2B drive the robot's DC motors
+    EPwm12Regs.TBPHS.bit.TBPHS=0; // set the phase to 0. TBPHS(time base phase high) has two parts:TBPHS and TBPHSHR, each part had 16-bit.
+// ZHX EX1 TBCTR counter with a 50MHz,CLKDIV is 5. After the divide, 50/(2^5)=50/32,so the period is 32/50M. TBPRD=39062, the period of PWm signal is 32/50M*39062
+	
+// ZHX EX1 EPWM2A and 2B drive the robot's DC motors.EPWM2A controls roght motor and EPWM2B controls left motor
     EPwm2Regs.TBCTL.bit.CLKDIV=0;
     EPwm2Regs.TBCTL.bit.PHSEN=0;
     EPwm2Regs.TBCTL.bit.CTRMODE=0;
@@ -584,6 +587,7 @@ void main(void)
 
     EPwm2Regs.AQCTLA.bit.CAU=1;
     EPwm2Regs.AQCTLA.bit.ZRO=2;
+// ZHX EX1 different with EPWM12A, EPWM2B had additional AQCTLB and CMPB.
     EPwm2Regs.AQCTLB.bit.CBU=1;
     EPwm2Regs.AQCTLB.bit.ZRO=2;
 
@@ -628,14 +632,15 @@ void main(void)
     EPwm9Regs.TBPHS.bit.TBPHS=0;
 
 	//ZHX EX1 use the GPIO_SetupPinMux() function to change the pin output by using PinMux table
-    GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); 
-    GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1);
+    GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); // EPWM2A is GPIO2
+    GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1); // EPWM2B is GPIO3
     GPIO_SetupPinMux(22,GPIO_MUX_CPU1,5);// EPWM12A is used  instead of GPIO22
-    GPIO_SetupPinMux(14,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(15,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,5);
+    GPIO_SetupPinMux(14,GPIO_MUX_CPU1,1);// EPWM8A is GPIO14
+    GPIO_SetupPinMux(15,GPIO_MUX_CPU1,1);// EPWM8B is GPIO15
+    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,5);// EPWM9A is GPIO16
 
     EALLOW; // Below are pretected register
+// ZHX EX1 disable the pull-up resistor when an I/O pin is set as a PWM output pin
     GpioCtrlRegs.GPAPUD.bit.GPIO2=1;
     GpioCtrlRegs.GPAPUD.bit.GPIO3=1;
     GpioCtrlRegs.GPAPUD.bit.GPIO14=1;
@@ -711,6 +716,9 @@ __interrupt void cpu_timer0_isr(void)
 
     if ((numTimer0calls%25) == 0) {
         // displayLEDletter(LEDdisplaynum);
+	// ZHX EX1 comment out this code in order to see EPWM12A signal drives LED1 with 0% duty cycle(led should be off)
+	// ZHX EX1 For chaging the CMPA register, in CCS View-Register-find the register you want->(expand).
+	// ZHX EX! CMPA=TBPRD--100% duty cycle
         LEDdisplaynum++;
         if (LEDdisplaynum == 0xFFFF) {  // prevent roll over exception
             LEDdisplaynum = 0;
@@ -748,7 +756,8 @@ __interrupt void cpu_timer2_isr(void)
 
 	// Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-// ZHX EX1 when the updown is equal to 1,count up. 2500 is the TBPRD, when dancount reach that value,switch counting。
+// ZHX EX1 when the updown is equal to 1,count up by 1. 2500 is the TBPRD, when dancount reach that value,switch counting and decrease the value by 1.
+// In this way we can change the duty cycle from 0 to 100 then from 100 to 0.
     /*if(updown==1){ 
         dancount++; 
         if(dancount>=2500){ 
@@ -763,7 +772,8 @@ __interrupt void cpu_timer2_isr(void)
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
     }
-// ZHX EX2 we create a global variable dancount2. when the updown is equal to 1,count up. we gradually increase the dancount2 to 10 with step of 0.01 then switch to decreasing dancount2 to -10 then repeat.
+// ZHX EX2 we create a global variable dancount2. when the updown is equal to 1,count up. 
+// we gradually increase the dancount2 to 10 with step of 0.01 then switch to decreasing dancount2 to -10 then repeat.
     if (updown==1){
         dancount2 = dancount2+0.01;
 	    if (dancount2>10) {
@@ -804,6 +814,7 @@ __interrupt void cpu_timer2_isr(void)
 	}
 }
 // ZHX EX2 following 2 functions are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
+// ZHX EX2 this function set EPWM2A to a duty cycle value related to the passed controleffort value
 void setEPWM2A(float controleffort){
 	if (controleffort>10){
 		controleffort=10;
@@ -811,7 +822,8 @@ void setEPWM2A(float controleffort){
 	if (controleffort<-10){
 		controleffort=10;
 	}
-	//ZHX EX2 when the control effort is -10, duty cycle is 0%;0 is 50% and 10 is 100%. CMPA&TBPRD are 16 bit integer and controleffort is a float.
+	//ZHX EX2 when the control effort is -10, duty cycle is 0%;0 is 50% and 10 is 100%. CMPA&TBPRD are 16 bit integer and controleffort is a float, there is a type conversion.
+	//ZHX EX2 duty cycle greater than 50% will cause the motor spin in postive direction, duty cycle less than 50% cause the motor spin in negative direction.
 	EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
 // ZHX EX2 similar to void setEPWM2A(float controleffort)
