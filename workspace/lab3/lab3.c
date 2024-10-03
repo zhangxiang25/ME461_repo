@@ -51,7 +51,9 @@ void setEPWM2B(float controleffort);
 //ZHX EX3 predefinition for functions
 void setEPWM8A_RCServo(float angle);
 void setEPWM8B_RCServo(float angle);
-//ZHX EX4 
+//ZHX EX4 for the C4note (((50000000/2)/2)/261.63)),
+// 50000000 is 50MHz(the clock frequency),the first 2 is CLKDIV defined in 'EPwm9Regs.TBCTL.bit.CLKDIV=1;'.the second 2,the square toggle between high and low states. 
+// Since the timer needs to count both the high and low portions of the waveform, you divide the frequency by 2 again to ensure that the full period of the square wave is considered.
 #define C4NOTE ((uint16_t)(((50000000/2)/2)/261.63))
 #define D4NOTE ((uint16_t)(((50000000/2)/2)/293.66))
 #define E4NOTE ((uint16_t)(((50000000/2)/2)/329.63))
@@ -73,6 +75,7 @@ void setEPWM8B_RCServo(float angle);
 #define D5SHARPNOTE ((uint16_t)(((50000000/2)/2)/622.25))
 #define A5FLATNOTE ((uint16_t)(((50000000/2)/2)/830.61))
 #define OFFNOTE 0
+// ZHX EX4 this part of the song "For Elise" have 255 notes(include offnote),put all the notes in the array'SONG_LENGTH'
 #define SONG_LENGTH 255
 uint16_t songarray[SONG_LENGTH] = {
 E5NOTE,
@@ -95,7 +98,7 @@ A4NOTE,
 A4NOTE,
 A4NOTE,
 A4NOTE,
-OFFNOTE,//
+OFFNOTE,
 C4NOTE,
 C4NOTE,
 E4NOTE,
@@ -541,7 +544,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
-	//ZHX EX4 timer1 is called every 125 milliseconds
+	//ZHX EX4 timer1 is called every 125 milliseconds(0.125s),also means each note of the song takes 0.125s
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
@@ -600,7 +603,7 @@ void main(void)
     EPwm8Regs.TBCTL.bit.FREE_SOFT=2;
 
     EPwm8Regs.TBCTR=0;
-	// ZHX EX3 we want the servo carrier frequency be 50Hz 50*TBPRD=3125000,so TBPRD=62500
+// ZHX EX3 we want the RC servo carrier frequency be 50Hz 50*TBPRD=3125000,so TBPRD=62500
     EPwm8Regs.TBPRD=62500; // ZHX EX3 TBPRD is a 16-bit register,the largest number we can set is 2^16-1=65535
 
     EPwm8Regs.CMPA.bit.CMPA=5000;// ZHX EX3 the intialvalue of CMPA and CMPB is commanding the servo to 8% duty cycle 0.08*62500(TBPRD)=5000
@@ -623,7 +626,7 @@ void main(void)
     EPwm9Regs.TBCTR=0;
 
     EPwm9Regs.TBPRD=0;
-	// ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
+// ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
     // EPwm9Regs.CMPA.bit.CMPA=0;
 
     EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 when CMPA is reached, no action is needed
@@ -738,7 +741,7 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-// ZHX EX4 set TBPRD to the value currently stored in songarray(we are in the beginning of the song)
+// ZHX EX4 set TBPRD to the value currently stored in songarray(we are in the beginning of the song,notecount=0)
 	EPwm9Regs.TBPRD=songarray[notecount];
 	if (notecount<SONG_LENGTH){
 	    notecount++; //ZHX EX4 increasing notecount to keep track where are we in the song
@@ -836,7 +839,7 @@ void setEPWM2B(float controleffort){
 	}
 	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
 }
-// ZHX EX3 following two functions will firstly saturate angle between -90 to 90 in case the value outside this range, then find relationship between angle and CMPA.
+// ZHX EX3 following two functions will firstly saturate angle between -90 to 90 degree in case the value outside this range, then find relationship between angle and CMPA.
 void setEPWM8A_RCServo(float angle){
 	if(angle > 90) {
 		angle = 90;
@@ -844,7 +847,7 @@ void setEPWM8A_RCServo(float angle){
 	if(angle < -90) {
 		angle = -90;
 	}
-	// ZHX EX3 angle is a variable between -90 to 90.-90 equals 4% duty cycle, 0 equals 8%, 90 equals 12%
+	// ZHX EX3 angle is a variable between -90 to 90.-90 equals 4% duty cycle, 0 equals 8%, 90 equals 12%.CMPA is a 16 bit int,but angel is a float,so we first calculate the float version then change it to int.
 	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
 		}
 //ZHX EX3 similar to void setEPWM8A_RCServo()
