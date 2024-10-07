@@ -53,7 +53,7 @@ int32_t ADCD1_COUNT=0;
 int32_t ADCD1_COUNT1=0;
 
 
-//xk is the current ADC reading, xk_1 is the ADC reading one millisecond ago, xk_2 two milliseconds ago,etc
+//EEC - xk is the current ADC reading, xk_1 is the ADC reading one millisecond ago, xk_2 two milliseconds ago, etc.
 //float xk = 0;
 //float xk_1 = 0;
 //float xk_2 = 0;
@@ -84,7 +84,7 @@ int32_t ADCD1_COUNT1=0;
 //    xk_1 = xk;
 //// Here write yk to DACA channel
 //    setDACA(yk);
-//// Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
+//// Print ADCIND0 and ADCIND1â€™s voltage value to TeraTerm every 100ms
 //    ADCD1_COUNT1++;
 //    if(ADCD1_COUNT1%100==1){
 //        UARTPrint=1;
@@ -92,6 +92,7 @@ int32_t ADCD1_COUNT1=0;
 //    AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
 //    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 //}
+//Here we are doing 22nd-order whatever. 
 float xk_n[22];
 float yk=0;
 float b[22]={   -2.3890045153263611e-03,
@@ -130,7 +131,7 @@ __interrupt void ADCD_ISR (void) {
     }
     // Here write yk to DACA channel
     setDACA(yk);
-    // Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
+    // Print ADCIND0 and ADCIND1â€™s voltage value to TeraTerm every 100ms
     ADCD1_COUNT1++;
     if(ADCD1_COUNT1%100==1){
         UARTPrint=1;
@@ -363,7 +364,7 @@ void main(void)
     EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
     EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
     EPwm5Regs.ETSEL.bit.SOCASEL = 2; // Select Event when counter equal to PRD
-    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (“pulse” is the same as“trigger”)
+    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (â€œpulseâ€ is the same asâ€œtriggerâ€)
     EPwm5Regs.TBCTR = 0x0; // Clear counter
     EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
@@ -568,14 +569,14 @@ __interrupt void cpu_timer2_isr(void)
 //setDACA(myu); // DACA will now output 2.25 Volts
 void setDACA(float dacouta0) {
     int16_t DACOutInt = 0;
-    DACOutInt = 4095.0/3.0*dacouta0; // perform scaling of 0 – almost 3V to 0 - 4095
+    DACOutInt = 4095.0/3.0*dacouta0; // perform scaling of 0 â€“ almost 3V to 0 - 4095
     if (DACOutInt > 4095) DACOutInt = 4095;
     if (DACOutInt < 0) DACOutInt = 0;
     DacaRegs.DACVALS.bit.DACVALS = DACOutInt;
 }
 void setDACB(float dacouta1) {
     int16_t DACOutInt = 0;
-    DACOutInt = 4095.0/3.0*dacouta1; // perform scaling of 0 – almost 3V to 0 - 4095
+    DACOutInt = 4095.0/3.0*dacouta1; // perform scaling of 0 â€“ almost 3V to 0 - 4095
     if (DACOutInt > 4095) DACOutInt = 4095;
     if (DACOutInt < 0) DACOutInt = 0;
     DacbRegs.DACVALS.bit.DACVALS = DACOutInt;
@@ -590,7 +591,7 @@ void setDACB(float dacouta1) {
     scaledADCIND0=adcd0result*3.0/4095;
 // Here write voltages value to DACA
     setDACA(scaledADCIND0);
-// Print ADCIND0’s voltage value to TeraTerm every 100ms
+// Print ADCIND0â€™s voltage value to TeraTerm every 100ms
     ADCD1_COUNT++;
     if(ADCD1_COUNT%100==0){
         //UARTPrint = 1;
