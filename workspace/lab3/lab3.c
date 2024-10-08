@@ -75,7 +75,7 @@ void setEPWM8B_RCServo(float angle);
 #define D5SHARPNOTE ((uint16_t)(((50000000/2)/2)/622.25))
 #define A5FLATNOTE ((uint16_t)(((50000000/2)/2)/830.61))
 #define OFFNOTE 0
-// ZHX EX4 this part of the song "For Elise" have 255 notes(include offnote),put all the notes in the array'SONG_LENGTH'
+// ZHX EX4 this part of the song "Fur Elise" have 255 notes(including offnotes),put all the notes in the array'SONG_LENGTH'
 #define SONG_LENGTH 255
 uint16_t songarray[SONG_LENGTH] = {
 E5NOTE,
@@ -544,7 +544,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
-	//ZHX EX4 timer1 is called every 125 milliseconds(0.125s),also means each note of the song takes 0.125s
+	//ZHX EX4 CpuTimer1 is called every 125 milliseconds(0.125s). This means each note of the song takes 0.125s
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
@@ -575,57 +575,57 @@ void main(void)
     EPwm12Regs.TBPHS.bit.TBPHS=0; // set the phase to 0. TBPHS(time base phase high) has two parts:TBPHS and TBPHSHR, each part had 16-bit.
 // ZHX EX1 TBCTR counter with a 50MHz,CLKDIV is 5. After the divide, 50/(2^5)=50/32,so the period is 32/50M. TBPRD=39062, the period of PWm signal is 32/50M*39062
 	
-// ZHX EX1 EPWM2A and 2B drive the robot's DC motors.EPWM2A controls roght motor and EPWM2B controls left motor
-    EPwm2Regs.TBCTL.bit.CLKDIV=0;
-    EPwm2Regs.TBCTL.bit.PHSEN=0;
-    EPwm2Regs.TBCTL.bit.CTRMODE=0;
-    EPwm2Regs.TBCTL.bit.FREE_SOFT=2;
+// ZHX EX1 EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
+    EPwm2Regs.TBCTL.bit.CLKDIV=0; // EEC - set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
+    EPwm2Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm2Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm2Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
 
-    EPwm2Regs.TBCTR=0;
+    EPwm2Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
 
-    EPwm2Regs.TBPRD=2500;
+    EPwm2Regs.TBPRD=2500; //EEC - Sets the period to 2500 clock cycles
 
-    EPwm2Regs.CMPA.bit.CMPA=0;
-    EPwm2Regs.CMPB.bit.CMPB=0;
+    EPwm2Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0% for the right motor. CMPA(counter compare a register) determine the duty cycle for the right motor.
+    EPwm2Regs.CMPB.bit.CMPB=0; // the duty cycle at beginning is 0% for the left motor. CMPA(counter compare a register) determine the duty cycle for the left motor.
 
-    EPwm2Regs.AQCTLA.bit.CAU=1;
-    EPwm2Regs.AQCTLA.bit.ZRO=2;
+    EPwm2Regs.AQCTLA.bit.CAU=1; // EEC - Set output low when counter reaches CMPA value
+    EPwm2Regs.AQCTLA.bit.ZRO=2; // EEC - Set output high when counter reaches zero
 // ZHX EX1 different with EPWM12A, EPWM2B had additional AQCTLB and CMPB.
-    EPwm2Regs.AQCTLB.bit.CBU=1;
-    EPwm2Regs.AQCTLB.bit.ZRO=2;
+    EPwm2Regs.AQCTLB.bit.CBU=1; // EEC - Set output low when counter reaches CMPB value
+    EPwm2Regs.AQCTLB.bit.ZRO=2; // EEC - Set output high when counter reaches zero
 
     EPwm2Regs.TBPHS.bit.TBPHS=0;
 
-	// ZHX EX1 EPWM8A and 8B controls 2 rc servos. 
+// ZHX EX1 EPWM8A and 8B controls 2 rc servos. 
     EPwm8Regs.TBCTL.bit.CLKDIV=4; // ZHX EX3 the frequency of EPWM8 is 50MHz 50000000/2^4=3125000
-    EPwm8Regs.TBCTL.bit.PHSEN=0;
-    EPwm8Regs.TBCTL.bit.CTRMODE=0;
-    EPwm8Regs.TBCTL.bit.FREE_SOFT=2;
-
-    EPwm8Regs.TBCTR=0;
+    EPwm8Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm8Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm8Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
+    EPwm8Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
+	
 // ZHX EX3 we want the RC servo carrier frequency be 50Hz 50*TBPRD=3125000,so TBPRD=62500
     EPwm8Regs.TBPRD=62500; // ZHX EX3 TBPRD is a 16-bit register,the largest number we can set is 2^16-1=65535
 
     EPwm8Regs.CMPA.bit.CMPA=5000;// ZHX EX3 the intialvalue of CMPA and CMPB is commanding the servo to 8% duty cycle 0.08*62500(TBPRD)=5000
     EPwm8Regs.CMPB.bit.CMPB=5000;
 
-    EPwm8Regs.AQCTLA.bit.CAU=1;
-    EPwm8Regs.AQCTLA.bit.ZRO=2;
-    EPwm8Regs.AQCTLB.bit.CBU=1;
-    EPwm8Regs.AQCTLB.bit.ZRO=2;
+    EPwm8Regs.AQCTLA.bit.CAU=1; // EEC - Set output low when counter reaches CMPA value
+    EPwm8Regs.AQCTLA.bit.ZRO=2; // EEC - Set output high when counter reaches zero
+    EPwm8Regs.AQCTLB.bit.CBU=1; // EEC - Set output low when counter reaches CMPB value
+    EPwm8Regs.AQCTLB.bit.ZRO=2; // EEC - Set output high when counter reaches zero
 
     EPwm8Regs.TBPHS.bit.TBPHS=0;
 
 	// ZHX EX1 EPWM9A drives the buzzer
 
     EPwm9Regs.TBCTL.bit.CLKDIV=1;
-    EPwm9Regs.TBCTL.bit.PHSEN=0;
-    EPwm9Regs.TBCTL.bit.CTRMODE=0;
-    EPwm9Regs.TBCTL.bit.FREE_SOFT=2;
+    EPwm9Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm9Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm9Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
 
-    EPwm9Regs.TBCTR=0;
+    EPwm9Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
 
-    EPwm9Regs.TBPRD=0;
+    EPwm9Regs.TBPRD=0; //EEC - Sets the period to zero. 
 // ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
     // EPwm9Regs.CMPA.bit.CMPA=0;
 
