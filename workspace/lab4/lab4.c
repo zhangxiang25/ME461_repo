@@ -338,6 +338,7 @@ void main(void)
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
 
     PieVectTable.ADCD1_INT= &ADCD_ISR;
+ // PieVectTable.ADCA1_INT= &ADCA_ISR;
   
 
     EDIS;    // This is needed to disable write to EALLOW protected registers
@@ -371,6 +372,7 @@ void main(void)
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
     EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
     EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+    //EPwm5Regs.TBPRD = 50000;
     // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
     EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
     EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
@@ -469,8 +471,9 @@ void main(void)
     // Enable TINT0 in the PIE: Group 1 interrupt 7
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
 
-
     PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
+  
+    //PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
 
@@ -582,7 +585,6 @@ void setDACB(float dacouta1) {
     if (DACOutInt < 0) DACOutInt = 0;
     DacbRegs.DACVALS.bit.DACVALS = DACOutInt;
 }
-
 
 //adcd1 pie interrupt
 /*__interrupt void ADCD_ISR (void) {
