@@ -34,8 +34,8 @@ __interrupt void cpu_timer2_isr(void);
 
 
 __interrupt void SWI_isr(void);
-
-void ADCD_ISR (void);
+// ZHX EX1.4b predefinition of ISR function
+__interrupt void ADCD_ISR (void)
 
 void setDACA(float dacouta0);
 void setDACB(float dacouta0);
@@ -47,16 +47,21 @@ extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 
+// ZHX EX1.4e Two int_16 variables to store ADCIND0 and ADCIND1's raw reading
 int16_t adcd0result=0;
 int16_t adcd1result=0;
+// ZHX EX1.4e store the scaled voltage value of ADCIND0（0-3V）
+float scaledADCIND0=0;
+// ZHX EX1.4e count variable for ADCD1 interrupt function
+int32_t ADCD1_COUNT=0;
 
 int16_t adca0result=0;
 int16_t adca1result=0;
 
 int16_t adcbresult=0;
 float adcbconvert=0;
-float scaledADCIND0=0;
-int32_t ADCD1_COUNT=0;
+
+
 int32_t ADCA1_COUNT=0;
 int32_t ADCD1_COUNT1=0;
 int32_t ADCB1_COUNT1=0;
@@ -71,6 +76,9 @@ int32_t ADCB1_COUNT1=0;
 //float yk = 0;
 ////b is the filter coefficients
 ////float b[5] = {0.2,0.2,0.2,0.2,0.2}; // 0.2 is 1/5th therefore a 5 point average
+// ZHX EX2 We type b=fir(4,.1), this desigh a 4th order FIR(Finite Impulse Response) low pass filter with the cutoff frequency 0.1 of the Nyquist frequency.
+// ZHX EX2 The sample frequency is 1000Hz Nyquist frequency is half of it,500Hz, so the cutoff frequency is 50HZ.
+// zhx EX2 we type arraytoCformat(b'), the coefficients will be printed out in a C array statement
 //float b[5]={    3.3833240118424500e-02,
 //    2.4012702387971543e-01,
 //    4.5207947200372001e-01,
@@ -92,7 +100,7 @@ int32_t ADCB1_COUNT1=0;
 //    xk_1 = xk;
 //// Here write yk to DACA channel
 //    setDACA(yk);
-//// Print ADCIND0 and ADCIND1â€™s voltage value to TeraTerm every 100ms
+//// Print ADCIND0 and ADCIND1's voltage value to TeraTerm every 100ms
 //    ADCD1_COUNT1++;
 //    if(ADCD1_COUNT1%100==1){
 //        UARTPrint=1;
@@ -521,7 +529,7 @@ void main(void)
     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
 
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
-
+    // ZHX EX1.4c Tell F28379D procesor to call interrupt ADCD1, which is PIE interrupt 1.6
     //PieVectTable.ADCD1_INT= &ADCD_ISR;
 //    PieVectTable.ADCA1_INT= &ADCA_ISR;
     PieVectTable.ADCB1_INT= &ADCB_ISR;
@@ -659,7 +667,7 @@ void main(void)
 
     // Enable TINT0 in the PIE: Group 1 interrupt 7
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
-
+    //ZHX EX1.4d enable PE interrupt 1.6
     //PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
   
     //PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
@@ -784,13 +792,12 @@ void setDACB(float dacouta1) {
 /*__interrupt void ADCD_ISR (void) {
     adcd0result = AdcdResultRegs.ADCRESULT0;
     adcd1result = AdcdResultRegs.ADCRESULT1;
-// Here covert ADCIND0 to volts
-    scaledADCIND0=adcd0result*3.0/4095;
-// Here write voltages value to DACA
+// ZHX EX1.4a convert ADCIND0 to volts.scaledADCIND0 is a float number and adcd0result is a int16_t, so we need the number 3.0 and 4095.0
+    scaledADCIND0=adcd0result*3.0/4095.0;
+// ZHX EX1.4a pass the value t setDACA function to echo the sample voltage back to DACA
     setDACA(scaledADCIND0);
-// Print ADCIND0â€™s voltage value to TeraTerm every 100ms
+// Print ADCIND0's voltage value to TeraTerm every 100ms
     ADCD1_COUNT++;
-    
     if(ADCD1_COUNT%100==0){
         //UARTPrint = 1;
     }
