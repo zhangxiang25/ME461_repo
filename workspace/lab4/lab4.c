@@ -108,7 +108,7 @@ int32_t ADCB1_COUNT1=0;
 //    AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
 //    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 //}
-//Here we are doing 22nd-order whatever.
+
 float xk_n[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
 float xk_1[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
 float xk_2[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
@@ -117,6 +117,8 @@ float yk=0;
 float yk1=0;
 float yk2=0;
 float yk3=0;
+//Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
+// ZHX EX2 we type b=fir1(22,75/500) in the matlab
 float b[22]={   -2.3890045153263611e-03,
     -3.3150057635348224e-03,
     -4.6136191242627002e-03,
@@ -255,16 +257,18 @@ float c[81]={   1.0173595459817986e-03,
     3.5587093228066228e-04,
     1.0173595459817986e-03};
 
-
+// ZHX EX2 this function is a 21st order low pass FIr filter with a 75Hz cutoff frequency
 __interrupt void ADCD_ISR (void) {
     adcd0result = AdcdResultRegs.ADCRESULT0;
     adcd1result = AdcdResultRegs.ADCRESULT1;
     // Here covert ADCIND0, ADCIND1 to volts
     xk_n[0] = adcd0result*3.0/4095.0;
     yk = 0;
+    // ZHX EX2 b[] is the filter coefficients we created in MATLAB
     for(int k=0;k<22;k++){
         yk += b[k]*xk_n[k];
     }
+    // ZHX EX2 save past states before exiting from the function
     for(int j=21;j>0;j--){
         xk_n[j] = xk_n[j-1];
     }
@@ -278,11 +282,11 @@ __interrupt void ADCD_ISR (void) {
     AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
-
+// ZHX EX3 
 __interrupt void ADCA_ISR (void) {
     adca0result = AdcaResultRegs.ADCRESULT0;
     adca1result = AdcaResultRegs.ADCRESULT1;
-    // Here covert ADCIND0, ADCIND1 to volts
+    //ZHX EX3 Convert ADCINA2, ADCINA3 to volts
     xk_1[0] = adca0result*3.0/4095.0;
     xk_2[0] = adca1result*3.0/4095.0;
     yk1 = 0;
@@ -318,7 +322,6 @@ __interrupt void ADCB_ISR (void) {
         sound[j] = sound[j-1];
     }
     // Here write yk to DACA channel
-
     setDACA(yk3+1.5);
     // Print ADCIND0 and ADCIND1â€™s voltage value to TeraTerm every 100ms
     ADCB1_COUNT1++;
@@ -531,7 +534,8 @@ void main(void)
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
     // ZHX EX1.4c Tell F28379D procesor to call interrupt ADCD1, which is PIE interrupt 1.6
     //PieVectTable.ADCD1_INT= &ADCD_ISR;
-//    PieVectTable.ADCA1_INT= &ADCA_ISR;
+    // ZHX EX3 Tell F28379D procesor to call interrupt ADCA1, which is PIE interrupt 1.1, we also need to comment out the code for exq and 2 where enabled interrupt 1.6
+    //PieVectTable.ADCA1_INT= &ADCA_ISR;
     PieVectTable.ADCB1_INT= &ADCB_ISR;
   
 
@@ -600,13 +604,13 @@ void main(void)
     //Select the channels to convert and end of conversion flag
     //Many statements commented out, To be used when using ADCA or ADCB
     //ADCA
-    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //SOC0 will convert Channel you choose Does not have to be A0
+    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //ZHX EX3 We have already used channel 0 and 1, so we use channel 2 hereSOC0 will convert Channel you choose Does not have to be A0
     AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //SOC1 will convert Channel you choose Does not have to be A1
+    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //ZHX EX3 SOC1 will convert Channel you choose Does not have to be A1, In this case we choose channel 3
     AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to last SOC that is converted and it will set INT1 flag ADCA1
+    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //ZHX EX3 set to last SOC that is converted and it will set INT1 flag ADCA1, In this case we use SOC0 and SOC1,so the last SOC is 1.
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     //ADCB
@@ -669,7 +673,7 @@ void main(void)
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
     //ZHX EX1.4d enable PE interrupt 1.6
     //PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
-  
+    //ZHX EX3 enable PE interrupt 1.1
     //PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
 
     PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
@@ -690,6 +694,7 @@ void main(void)
             //serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
             //serial_printf(&SerialA,"ADC voltage: %.3f\r\n",scaledADCIND0);
             //serial_printf(&SerialA,"ADCIND0 voltage: %.3f\r\n",yk);
+            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
             serial_printf(&SerialA,"ADCINA2 voltage: %.3f, ADCINA3 voltage: %.3f\r\n",yk1,yk2);
             UARTPrint = 0;
         }
