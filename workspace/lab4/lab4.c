@@ -31,9 +31,11 @@
 __interrupt void cpu_timer0_isr(void);
 __interrupt void cpu_timer1_isr(void);
 __interrupt void cpu_timer2_isr(void);
+
+
 __interrupt void SWI_isr(void);
 
-__interrupt void ADCD_ISR (void);
+void ADCD_ISR (void);
 
 void setDACA(float dacouta0);
 void setDACB(float dacouta0);
@@ -547,20 +549,21 @@ void main(void)
 
 
     EALLOW;
+    // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
     EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
     EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
-    EPwm5Regs.ETSEL.bit.SOCASEL = 2; // Select Event when counter equal to PRD
-    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (â€œpulseâ€� is the same asâ€œtriggerâ€�)
+    EPwm5Regs.ETSEL.bit.SOCASEL = 2; // ZHX EX1.1 SOCASEL has 3 bits, 2 to binary is 010. It enable event time-base counter equal to period(TBCTR=TBPRD)
+    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // ZHX EX1.1 SOCAPRD has 2 bits. It generate pulse on 1st event 
     EPwm5Regs.TBCTR = 0x0; // Clear counter
     EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
     EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
-    //EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+    //EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms. sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
     //EPwm5Regs.TBPRD = 12500;
     EPwm5Regs.TBPRD = 5000;
     // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
     EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
-    EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
+    EPwm5Regs.TBCTL.bit.CTRMODE = 0; //ZHX EX1.1 Counter Mode(CTRMODE 2 bits) unfreeze, and enter up count mode
     EDIS;
 
 
@@ -615,19 +618,20 @@ void main(void)
     AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     //ADCD
-    AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0; // set SOC0 to convert pin D0
+    //ZHX EX1.2 Following code assign channel ADCIND0 to SOC0 and channel ADCIND1 to SOC1;SOC0 has the higher priority so it will sample first then SOC1. We will see the ADC peripheral table to determine the value below.
+    AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0; //ZHX EX1.2 we set SOC0 to convert pin D0, there are 16 pins in total.
     AdcdRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    AdcdRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC0
-    AdcdRegs.ADCSOC1CTL.bit.CHSEL = 1; //set SOC1 to convert pin D1
+    AdcdRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // ZHX Ex1.2 SOC0 trigger source select,in this case ADCTRIG13 will set SOC0 flag. EPWM5 ADCSOCA will trigger SOC0
+    AdcdRegs.ADCSOC1CTL.bit.CHSEL = 1; //ZHX EX1.2 we set SOC1 to convert pin D1
     AdcdRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    AdcdRegs.ADCSOC1CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC1
+    AdcdRegs.ADCSOC1CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC1, setting similar to ADCSOC0CTL.bit.TRIGSEL
     //AdcdRegs.ADCSOC2CTL.bit.CHSEL = ???; //set SOC2 to convert pin D2
     //AdcdRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //AdcdRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA will trigger SOC2
     //AdcdRegs.ADCSOC3CTL.bit.CHSEL = ???; //set SOC3 to convert pin D3
     //AdcdRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //AdcdRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA will trigger SOC3
-    AdcdRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to SOC1, the last converted, and it will set INT1 flag ADCD1
+    AdcdRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //ZHX EX1.2 ADC source select we set to SOC1,which is the last converted, and it will set INT1 flag ADCD1
     AdcdRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     EDIS;
@@ -759,13 +763,15 @@ __interrupt void cpu_timer2_isr(void)
 //Example code
 //float myu = 2.25;
 //setDACA(myu); // DACA will now output 2.25 Volts
+// ZHX EX1.3 setDACA(float dacouta0) this function takes a voltage between 0.0V to 3.0V and scaled. DAC register is looking for a value between 0 and 4095(12 bits are used). 
 void setDACA(float dacouta0) {
     int16_t DACOutInt = 0;
-    DACOutInt = 4095.0/3.0*dacouta0; // perform scaling of 0 â€“ almost 3V to 0 - 4095
-    if (DACOutInt > 4095) DACOutInt = 4095;
+    DACOutInt = 4095.0/3.0*dacouta0; // perform scaling of 0 - almost 3V to 0 - 4095
+    if (DACOutInt > 4095) DACOutInt = 4095; // ZHX EX1.3 if the value go outside the interval, saturated in [0,3]
     if (DACOutInt < 0) DACOutInt = 0;
     DacaRegs.DACVALS.bit.DACVALS = DACOutInt;
 }
+// ZHX EX1.3 similar to setDACA(float dacouta0)
 void setDACB(float dacouta1) {
     int16_t DACOutInt = 0;
     DACOutInt = 4095.0/3.0*dacouta1; // perform scaling of 0 â€“ almost 3V to 0 - 4095
@@ -784,6 +790,7 @@ void setDACB(float dacouta1) {
     setDACA(scaledADCIND0);
 // Print ADCIND0â€™s voltage value to TeraTerm every 100ms
     ADCD1_COUNT++;
+    
     if(ADCD1_COUNT%100==0){
         //UARTPrint = 1;
     }
