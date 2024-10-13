@@ -61,7 +61,6 @@ int16_t adca1result=0;
 int16_t adcbresult=0;
 float adcbconvert=0;
 
-
 int32_t ADCA1_COUNT=0;
 int32_t ADCD1_COUNT1=0;
 int32_t ADCB1_COUNT1=0;
@@ -141,7 +140,8 @@ float b[22]={   -2.3890045153263611e-03,
     -4.6136191242627002e-03,
     -3.3150057635348224e-03,
     -2.3890045153263611e-03};
-
+//Here we are doing 31st-order low pass FIR filter with 500Hz cutoff frequency whatever.
+// ZHX EX4 we type c=fir1(31,.25) and arraytoCformat(b') in the matlab
 //float c[32]={   -6.3046914864397922e-04,
 //    -1.8185681242784432e-03,
 //    -2.5619416124584822e-03,
@@ -175,6 +175,8 @@ float b[22]={   -2.3890045153263611e-03,
 //    -1.8185681242784432e-03,
 //    -6.3046914864397922e-04};
 
+// ZHX EX4 This array stores the filtering coefficients for a Bandpass filter that allows frequencies between 1950 and 2050 Hz through.
+// ZHX EX4 Because we want to locate a 2000 Hz signal. We chose a 80 orderc filter to do this. The Matlab function was bandPass=fir1(100,[.39,.41])
 float c[81]={   1.0173595459817986e-03,
     3.5587093228066228e-04,
     -1.0804341230246895e-03,
@@ -295,6 +297,7 @@ __interrupt void ADCA_ISR (void) {
         yk1 += b[k]*xk_1[k];
         yk2 += b[k]*xk_2[k];
     }
+    // ZHX EX3 save past states before exiting from the function
     for(int j=21;j>0;j--){
         xk_1[j] = xk_1[j-1];
         xk_2[j] = xk_2[j-1];
@@ -309,28 +312,33 @@ __interrupt void ADCA_ISR (void) {
 }
 
 __interrupt void ADCB_ISR (void) {
+    // ZHX EX4 set GPIO52 high to the oscilloscope
     GpioDataRegs.GPBSET.bit.GPIO52=1;
     adcbresult = AdcbResultRegs.ADCRESULT0;
 // Here covert ADCIND0, ADCIND1 to volts
     //adcbconvert=adcbresult*3.0/4095.0;
     sound[0]=adcbresult*3.0/4095.0;
     yk3 = 0;
+    // ZHX EX4 for 80st order filter
     for(int k=0;k<81;k++){
         yk3 += c[k]*sound[k];
     }
     for(int j=81;j>0;j--){
         sound[j] = sound[j-1];
     }
+    // ZHX EX4.1 echo the ADC voltage reading(unfiltered)
+    setDACA(sound[0]);
     // Here write yk to DACA channel
     setDACA(yk3+1.5);
     // Print ADCIND0 and ADCIND1â€™s voltage value to TeraTerm every 100ms
     ADCB1_COUNT1++;
-    if(ADCB1_COUNT1%100==1){
+    if(ADCB1_COUNT1%400==1){
         UARTPrint=1;
     }
 
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    // Set GPI052 pin LOW so that time can be recorded on how long this interrupt took
     GpioDataRegs.GPBCLEAR.bit.GPIO52=1;
 }
 void main(void)
@@ -490,7 +498,8 @@ void main(void)
     //Joy Stick Pushbutton
     GPIO_SetupPinMux(8, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(8, GPIO_INPUT, GPIO_PULLUP);
-
+    
+    // ZHX EX4 Set up GPIO52 as an output pin
     GPIO_SetupPinMux(52, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(52, GPIO_OUTPUT, GPIO_PULLUP);
 
@@ -571,8 +580,8 @@ void main(void)
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
     EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
     //EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms. sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
-    //EPwm5Regs.TBPRD = 12500;
-    EPwm5Regs.TBPRD = 5000;
+    //EPwm5Regs.TBPRD = 12500; // ZHX EX4 the sample rate of microphone is 0.25ms so TBPRD=50M/4000=12500Hz
+    EPwm5Regs.TBPRD = 5000; // ZHX EX4 For the band pass filter with sample rate of 10000Hz
     // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
     EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
     EPwm5Regs.TBCTL.bit.CTRMODE = 0; //ZHX EX1.1 Counter Mode(CTRMODE 2 bits) unfreeze, and enter up count mode
@@ -614,7 +623,9 @@ void main(void)
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     //ADCB
-    AdcbRegs.ADCSOC0CTL.bit.CHSEL =4; //SOC0 will convert Channel you choose Does not have to be B0
+    // ZHX EX4 Set up ADCB
+    AdcbRegs.ADCSOC0CTL.bit.CHSEL =4; //ZHX EX4 In ex1-3 we alreay use channel1-3 so we choose channel 4 here SOC0 will convert to this Channel
+    // ZHX EX4 we only need SOC since there is only one ADC channel
     AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
     //AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
@@ -675,7 +686,7 @@ void main(void)
     //PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
     //ZHX EX3 enable PE interrupt 1.1
     //PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
-
+    //ZHX EX4 enable PE interrupt 1.2
     PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
     // Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
