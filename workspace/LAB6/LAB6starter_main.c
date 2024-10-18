@@ -673,14 +673,32 @@ __interrupt void cpu_timer2_isr(void)
     Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
-    Ik_1_L=Ik_L;
+    // Ik_1_L=Ik_L;
 
     ek_R=Vref-VRightK;
     Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;
-    Ik_1_R=Ik_R;
+    // Ik_1_R=Ik_R;
+    
+    if (uLeft>=10){
+        uLeft=10;
+        Ik_1_L=Ik_L;
+    }
+    else if (uLeft<=-10){
+        uLeft=-10;
+        Ik_1_L=Ik_L;
+    }
 
+    if (uRight>=10){
+        uRight=10;
+        Ik_1_R=Ik_R;
+    }
+    else if (uRight<=-10){
+        uRight=-10;
+        Ik_1_R=Ik_R;
+    }
+    
     setEPWM2A(uRight);
     setEPWM2B(-uLeft);
 
@@ -960,15 +978,12 @@ __interrupt void SPIB_isr(void) {
 __interrupt void can_isr(void)
 {
     int i = 0;
-
     uint32_t status;
-
     GpioDataRegs.GPBSET.bit.GPIO52 = 1;
     //
     // Read the CAN interrupt status to find the cause of the interrupt
     //
     status = CANgetInterruptCause(CANB_BASE);
-
     //
     // If the cause is a controller status interrupt, then get the status
     //
@@ -982,9 +997,7 @@ __interrupt void can_isr(void)
         // The act of reading this status will clear the interrupt.
         //
         status = CANgetStatus(CANB_BASE);
-
     }
-
     //
     // Check if the cause is the transmit message object 1
     //
@@ -1096,8 +1109,6 @@ __interrupt void can_isr(void)
 
         lightlevel_1 = ((256.0*256.0*256.0)*lightlevel_raw_1[3] + (256.0*256.0)*lightlevel_raw_1[2] + 256.0*lightlevel_raw_1[1] + lightlevel_raw_1[0])/65535;
         quality_1 = ((256.0*256.0*256.0)*quality_raw_1[3] + (256.0*256.0)*quality_raw_1[2] + 256.0*quality_raw_1[1] + quality_raw_1[0])/65535;
-
-
         //
         // Getting to this point means that the RX interrupt occurred on
         // message object 2, and the message RX is complete.  Clear the
@@ -1111,20 +1122,16 @@ __interrupt void can_isr(void)
         errorFlag = 0;
         GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
     }
-
-
     else if(status == RX_MSG_OBJ_ID_4)
     {
         //
         // Get the received message
         //
         CANreadMessage(CANB_BASE, RX_MSG_OBJ_ID_4, rxMsgData);
-
         for(i = 0; i<4; i++)
         {
             lightlevel_raw_3[i] = rxMsgData[i];
             quality_raw_3[i] = rxMsgData[i+4];
-
         }
 
         lightlevel_3 = ((256.0*256.0*256.0)*lightlevel_raw_3[3] + (256.0*256.0)*lightlevel_raw_3[2] + 256.0*lightlevel_raw_3[1] + lightlevel_raw_3[0])/65535;
@@ -1143,9 +1150,6 @@ __interrupt void can_isr(void)
         errorFlag = 0;
         GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
     }
-
-
-
     //
     // If something unexpected caused the interrupt, this would handle it.
     //
@@ -1155,12 +1159,10 @@ __interrupt void can_isr(void)
         // Spurious interrupt handling can go here.
         //
     }
-
     //
     // Clear the global interrupt flag for the CAN interrupt line
     //
     CANclearGlobalInterruptStatus(CANB_BASE, CAN_GLOBAL_INT_CANINT0);
-
     //
     // Acknowledge this interrupt located in group 9
     //
@@ -1169,110 +1171,58 @@ __interrupt void can_isr(void)
 // ----- code for CAN end here -----
 void init_eQEPs(void) {
 
-
     // setup eQEP1 pins for input
-
     EALLOW;
-
     //Disable internal pull-up for the selected output pins for reduced power consumption
-
     GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1; // Disable pull-up on GPIO20 (EQEP1A)
-
     GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1; // Disable pull-up on GPIO21 (EQEP1B)
-
     GpioCtrlRegs.GPAQSEL2.bit.GPIO20 = 2; // Qual every 6 samples
-
     GpioCtrlRegs.GPAQSEL2.bit.GPIO21 = 2; // Qual every 6 samples
-
     EDIS;
 
     // This specifies which of the possible GPIO pins will be EQEP1 functional pins.
-
     // Comment out other unwanted lines.
-
     GPIO_SetupPinMux(20, GPIO_MUX_CPU1, 1);
-
     GPIO_SetupPinMux(21, GPIO_MUX_CPU1, 1);
-
     EQep1Regs.QEPCTL.bit.QPEN = 0; // make sure eqep in reset
-
     EQep1Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-
     EQep1Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-
     EQep1Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-
     EQep1Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-
     EQep1Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count
-
     EQep1Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend in Code Composer
-
     EQep1Regs.QPOSCNT = 0;
-
     EQep1Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
 
-
-
     // setup QEP2 pins for input
-
     EALLOW;
-
     //Disable internal pull-up for the selected output pinsfor reduced power consumption
-
     GpioCtrlRegs.GPBPUD.bit.GPIO54 = 1; // Disable pull-up on GPIO54 (EQEP2A)
-
     GpioCtrlRegs.GPBPUD.bit.GPIO55 = 1; // Disable pull-up on GPIO55 (EQEP2B)
-
     GpioCtrlRegs.GPBQSEL2.bit.GPIO54 = 2; // Qual every 6 samples
-
     GpioCtrlRegs.GPBQSEL2.bit.GPIO55 = 2; // Qual every 6 samples
 
     EDIS;
-
     GPIO_SetupPinMux(54, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2A
-
     GPIO_SetupPinMux(55, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2B
-
     EQep2Regs.QEPCTL.bit.QPEN = 0; // make sure qep reset
-
     EQep2Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-
     EQep2Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-
     EQep2Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-
     EQep2Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-
     EQep2Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count.
-
     EQep2Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend
-
     EQep2Regs.QPOSCNT = 0;
-
     EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
-
 }
-
-
 float readEncLeft(void) {
-
     int32_t raw = 0;
-
     uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U
-
-
     raw = EQep1Regs.QPOSCNT;
-
     if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-
-
     // 100 slits in the encoder disk so 100 square waves per one revolution of the
-
     // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-
     // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-
     return (-raw*(2*PI)/12000.0);
 
 }
