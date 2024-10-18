@@ -64,8 +64,8 @@ float adcbconvert=0;
 int32_t ADCA1_COUNT=0;
 int32_t ADCD1_COUNT1=0;
 int32_t ADCB1_COUNT1=0;
-
-//EEC - xk is the current ADC reading, xk_1 is the ADC reading one millisecond ago, xk_2 two milliseconds ago, etc.
+//ZHX EX2 implement a filtering algorithms to filter the noisy signal.Below code is a 5 tap averaging filter
+//xk is the current ADC reading, xk_1 is the ADC reading one millisecond ago, xk_2 two milliseconds ago, etc.
 //float xk = 0;
 //float xk_1 = 0;
 //float xk_2 = 0;
@@ -77,7 +77,7 @@ int32_t ADCB1_COUNT1=0;
 ////float b[5] = {0.2,0.2,0.2,0.2,0.2}; // 0.2 is 1/5th therefore a 5 point average
 // ZHX EX2 We type b=fir(4,.1), this desigh a 4th order FIR(Finite Impulse Response) low pass filter with the cutoff frequency 0.1 of the Nyquist frequency.
 // ZHX EX2 The sample frequency is 1000Hz Nyquist frequency is half of it,500Hz, so the cutoff frequency is 50HZ.
-// zhx EX2 we type arraytoCformat(b'), the coefficients will be printed out in a C array statement
+// zhx EX2 We type arraytoCformat(b'), the coefficients will be printed out in a C array statement
 //float b[5]={    3.3833240118424500e-02,
 //    2.4012702387971543e-01,
 //    4.5207947200372001e-01,
@@ -141,7 +141,8 @@ float b[22]={   -2.3890045153263611e-03,
     -3.3150057635348224e-03,
     -2.3890045153263611e-03};
 //Here we are doing 31st-order low pass FIR filter with 500Hz cutoff frequency whatever.
-// ZHX EX4 we type c=fir1(31,.25) and arraytoCformat(b') in the matlab
+// ZHX EX4 we type c=fir1(31,.25) and arraytoCformat(b') in the matlabsampling frequeny is 4000Hz, Nyquist frequency is 2000Hz. the cutoff frequency we want is 500Hz,
+// ZHX EX4 500/2000 is 0.25.
 //float c[32]={   -6.3046914864397922e-04,
 //    -1.8185681242784432e-03,
 //    -2.5619416124584822e-03,
@@ -293,6 +294,7 @@ __interrupt void ADCA_ISR (void) {
     xk_2[0] = adca1result*3.0/4095.0;
     yk1 = 0;
     yk2 = 0;
+    // ZHX EX3 the filtered value from 21st order filter of both rotaion yk1 and yk2
     for(int k=0;k<22;k++){
         yk1 += b[k]*xk_1[k];
         yk2 += b[k]*xk_2[k];
@@ -338,7 +340,7 @@ __interrupt void ADCB_ISR (void) {
 
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-    // Set GPI052 pin LOW so that time can be recorded on how long this interrupt took
+    // ZHX EX4 Set GPI052 pin LOW so that time can be recorded on how long this interrupt took
     GpioDataRegs.GPBCLEAR.bit.GPIO52=1;
 }
 void main(void)
@@ -524,7 +526,7 @@ void main(void)
     // The shell ISR routines are found in F2837xD_DefaultIsr.c.
     // This function is found in F2837xD_PieVect.c.
     InitPieVectTable();
-
+    // ZHX EX1.4c tell the F28379D precessor to call defined function when certain interrupt events occur.
     // Interrupts that are used in this example are re-mapped to
     // ISR functions found within this project
     EALLOW;  // This is needed to write to EALLOW protected registers
@@ -541,7 +543,7 @@ void main(void)
     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
 
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
-    // ZHX EX1.4c Tell F28379D procesor to call interrupt ADCD1, which is PIE interrupt 1.6
+    // ZHX EX1.4c Tell F28379D procesor to call interrupt ADCD1, which is PIE interrupt 1.6 from reperence
     //PieVectTable.ADCD1_INT= &ADCD_ISR;
     // ZHX EX3 Tell F28379D procesor to call interrupt ADCA1, which is PIE interrupt 1.1, we also need to comment out the code for exq and 2 where enabled interrupt 1.6
     //PieVectTable.ADCA1_INT= &ADCA_ISR;
@@ -579,7 +581,7 @@ void main(void)
     EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
     EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
-    //EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms. sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
+    //EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms,so sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
     //EPwm5Regs.TBPRD = 12500; // ZHX EX4 the sample rate of microphone is 0.25ms so TBPRD=50M/4000=12500Hz
     EPwm5Regs.TBPRD = 5000; // ZHX EX4 For the band pass filter with sample rate of 10000Hz
     // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
@@ -624,7 +626,7 @@ void main(void)
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     //ADCB
     // ZHX EX4 Set up ADCB
-    AdcbRegs.ADCSOC0CTL.bit.CHSEL =4; //ZHX EX4 In ex1-3 we alreay use channel1-3 so we choose channel 4 here SOC0 will convert to this Channel
+    AdcbRegs.ADCSOC0CTL.bit.CHSEL =4; //ZHX EX4 In ex1-3 we alreay use channel 1-3 so we choose channel 4 here SOC0 will convert to this Channel
     // ZHX EX4 we only need SOC since there is only one ADC channel
     AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
@@ -637,15 +639,16 @@ void main(void)
     //AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
     //AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
-    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //ZHX EX4 set to last SOC that is converted, we only need SOC0 so it should be 0
     AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     //ADCD
-    //ZHX EX1.2 Following code assign channel ADCIND0 to SOC0 and channel ADCIND1 to SOC1;SOC0 has the higher priority so it will sample first then SOC1. We will see the ADC peripheral table to determine the value below.
+    //ZHX EX1.2 Following code assign channel ADCIND0 to SOC0 and channel ADCIND1 to SOC1;SOC0 has the higher priority so it will sample first then SOC1. 
+    //We will see the ADC peripheral table to determine the value below.
     AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0; //ZHX EX1.2 we set SOC0 to convert pin D0, there are 16 pins in total.
     AdcdRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcdRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // ZHX Ex1.2 SOC0 trigger source select,in this case ADCTRIG13 will set SOC0 flag. EPWM5 ADCSOCA will trigger SOC0
-    AdcdRegs.ADCSOC1CTL.bit.CHSEL = 1; //ZHX EX1.2 we set SOC1 to convert pin D1
+    AdcdRegs.ADCSOC1CTL.bit.CHSEL = 1; //ZHX EX1.2 we set SOC1 to convert pin D1.  the conversion results will be stored in rigister AbcdResultRegs.ADCRESULT1. 
     AdcdRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     AdcdRegs.ADCSOC1CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC1, setting similar to ADCSOC0CTL.bit.TRIGSEL
     //AdcdRegs.ADCSOC2CTL.bit.CHSEL = ???; //set SOC2 to convert pin D2
@@ -660,11 +663,12 @@ void main(void)
     EDIS;
 
 
-    // Enable DACA and DACB outputs
+    // ZHX EX1.3 Setup DACA and DACB outputs,ADCINA0 and ADCINA1 are DACA and DACB respectively.
     EALLOW;
     DacaRegs.DACOUTEN.bit.DACOUTEN = 1; //enable dacA output-->uses ADCINA0
     DacaRegs.DACCTL.bit.LOADMODE = 0; //load on next sysclk
     DacaRegs.DACCTL.bit.DACREFSEL = 1; //use ADC VREF as reference voltage
+    
     DacbRegs.DACOUTEN.bit.DACOUTEN = 1; //enable dacB output-->uses ADCINA1
     DacbRegs.DACCTL.bit.LOADMODE = 0; //load on next sysclk
     DacbRegs.DACCTL.bit.DACREFSEL = 1; //use ADC VREF as reference voltage
@@ -673,6 +677,7 @@ void main(void)
     // Enable CPU int1 which is connected to CPU-Timer 0, CPU int13
     // which is connected to CPU-Timer 1, and CPU int 14, which is connected
     // to CPU-Timer 2:  int 12 is for the SWI.  
+    //ZHX EX1.4d ADCD1 is oart of interrupt INT1,we enabled the INT1.
     IER |= M_INT1;
     IER |= M_INT8;  // SCIC SCID
     IER |= M_INT9;  // SCIA
@@ -803,7 +808,7 @@ void setDACB(float dacouta1) {
     if (DACOutInt < 0) DACOutInt = 0;
     DacbRegs.DACVALS.bit.DACVALS = DACOutInt;
 }
-
+// ZHX EX1.4 ADCD1 hardware interrupt function to be called whten ADCIND0 and ADCIND1 are finished converting.
 //adcd1 pie interrupt
 /*__interrupt void ADCD_ISR (void) {
     adcd0result = AdcdResultRegs.ADCRESULT0;
@@ -812,12 +817,13 @@ void setDACB(float dacouta1) {
     scaledADCIND0=adcd0result*3.0/4095.0;
 // ZHX EX1.4a pass the value t setDACA function to echo the sample voltage back to DACA
     setDACA(scaledADCIND0);
-// Print ADCIND0's voltage value to TeraTerm every 100ms
+// ZHX EX1.4f Print ADCIND0's voltage value to TeraTerm every 100ms with count variable ADCD1 interrupt function
     ADCD1_COUNT++;
     if(ADCD1_COUNT%100==0){
         //UARTPrint = 1;
     }
-    AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    //ZHX ex1.4g clear interrupt source flag and PIE peripheral so processor will wait for next interrupt flag.
+    AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; 
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
  }
  */
