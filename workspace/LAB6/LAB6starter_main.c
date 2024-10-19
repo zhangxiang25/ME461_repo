@@ -128,6 +128,9 @@ float VRightK=0.0;
 
 float Kp=3;
 float Ki=5;
+float Kturn=3;
+float eturn=0.0;
+float turn=0.0;
 float Vref=0.0;
 
 float ek_L=0.0;
@@ -563,6 +566,7 @@ void main(void)
             //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
             //serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
+            //serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
 
             UARTPrint = 0;
@@ -669,13 +673,17 @@ __interrupt void cpu_timer2_isr(void)
     PosLeft_K_1=PosLeft_K;
     PosRight_K_1=PosRight_K;
 
+    //eturn=turn+VLeftK-VRightK;
+
     ek_L=Vref-VLeftK;
+    //ek_L=Vref-VLeftK-eturn*Kturn;
     Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
     // Ik_1_L=Ik_L;
 
     ek_R=Vref-VRightK;
+    //ek_R=Vref-VRightK-eturn*Kturn;
     Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;

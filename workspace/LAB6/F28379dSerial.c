@@ -78,7 +78,7 @@ uint16_t init_serialSCIA(serialSCIA_t *s, uint32_t baud)
     if (s == &SerialA) {
         sci = &SciaRegs;
         s->sci = sci;
-        
+
         init_bufferSCIA(&s->TX);
 
         GPIO_SetupPinMux(43, GPIO_MUX_CPU1, 0);
@@ -197,7 +197,7 @@ uint16_t init_serialSCIB(serialSCIB_t *s, uint32_t baud)
     if (s == &SerialB) {
         sci = &ScibRegs;
         s->sci = sci;
-        
+
         init_bufferSCIB(&s->TX);
 
         GPIO_SetupPinMux(15, GPIO_MUX_CPU1, 0);
@@ -318,7 +318,7 @@ uint16_t init_serialSCIC(serialSCIC_t *s, uint32_t baud)
     if (s == &SerialC) {
         sci = &ScicRegs;
         s->sci = sci;
-        
+
         init_bufferSCIC(&s->TX);
         GPIO_SetupPinMux(139, GPIO_MUX_CPU1, 0);
         GPIO_SetupPinOptions(139, GPIO_INPUT, GPIO_PULLUP);
@@ -436,7 +436,7 @@ uint16_t init_serialSCID(serialSCID_t *s, uint32_t baud)
     if (s == &SerialD) {
         sci = &ScidRegs;
         s->sci = sci;
-        
+
         init_bufferSCID(&s->TX);
         GPIO_SetupPinMux(105, GPIO_MUX_CPU1, 0);
         GPIO_SetupPinOptions(105, GPIO_INPUT, GPIO_PULLUP);
@@ -636,6 +636,7 @@ __interrupt void TXDINT_data_sent(void)
 }
 
 //for SerialA
+
 #ifdef _FLASH
 #pragma CODE_SECTION(RXAINT_recv_ready, ".TI.ramfunc");
 #endif

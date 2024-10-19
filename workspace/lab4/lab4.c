@@ -803,7 +803,7 @@ void setDACA(float dacouta0) {
 // ZHX EX1.3 similar to setDACA(float dacouta0)
 void setDACB(float dacouta1) {
     int16_t DACOutInt = 0;
-    DACOutInt = 4095.0/3.0*dacouta1; // perform scaling of 0 â€“ almost 3V to 0 - 4095
+    DACOutInt = 4095.0/3.0*dacouta1; // perform scaling of 0 - almost 3V to 0 - 4095
     if (DACOutInt > 4095) DACOutInt = 4095;
     if (DACOutInt < 0) DACOutInt = 0;
     DacbRegs.DACVALS.bit.DACVALS = DACOutInt;
