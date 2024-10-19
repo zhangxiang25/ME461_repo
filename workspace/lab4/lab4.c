@@ -36,7 +36,7 @@ __interrupt void cpu_timer2_isr(void);
 __interrupt void SWI_isr(void);
 // ZHX EX1.4b predefinition of ISR function
 __interrupt void ADCD_ISR (void)
-
+// ZHX EX1..3 predefinition for DAC output function
 void setDACA(float dacouta0);
 void setDACB(float dacouta0);
 
@@ -64,6 +64,7 @@ float adcbconvert=0;
 int32_t ADCA1_COUNT=0;
 int32_t ADCD1_COUNT1=0;
 int32_t ADCB1_COUNT1=0;
+
 //ZHX EX2 implement a filtering algorithms to filter the noisy signal.Below code is a 5 tap averaging filter
 //xk is the current ADC reading, xk_1 is the ADC reading one millisecond ago, xk_2 two milliseconds ago, etc.
 //float xk = 0;
