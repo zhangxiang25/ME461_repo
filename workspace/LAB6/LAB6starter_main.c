@@ -673,17 +673,13 @@ __interrupt void cpu_timer2_isr(void)
     PosLeft_K_1=PosLeft_K;
     PosRight_K_1=PosRight_K;
 
-    //eturn=turn+VLeftK-VRightK;
-
     ek_L=Vref-VLeftK;
-    //ek_L=Vref-VLeftK-eturn*Kturn;
     Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
     // Ik_1_L=Ik_L;
 
     ek_R=Vref-VRightK;
-    //ek_R=Vref-VRightK-eturn*Kturn;
     Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;
