@@ -60,6 +60,9 @@ void setEPWM2B(float controleffort);
 
 // Count variables
 uint32_t numTimer0calls = 0;
+
+uint32_t numTimer2calls = 0;
+
 uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
@@ -131,7 +134,7 @@ float Ki=5;
 float Kturn=3;
 float eturn=0.0;
 float turn=0.0;
-float Vref=0.0;
+float Vref=0.25;
 
 float ek_L=0.0;
 float ek_1_L=0.0;
@@ -142,6 +145,38 @@ float ek_R=0.0;
 float ek_1_R=0.0;
 float Ik_R=0.0;
 float Ik_1_R=0.0;
+
+
+float R_Wh=0.0593;
+float W_R=0.173;
+float theta_l=0.0;
+float theta_r=0.0;
+float theta_l_prev=0.0;
+float theta_r_prev=0.0;
+float phiR=0.0;
+float theta_ave=0.0;
+float theta_ave_dot=0.0;
+float x_dot=0.0;
+float y_dot=0.0;
+float x_dot_prev=0.0;
+float y_dot_prev=0.0;
+
+float printLV3 = 0;
+float printLV4 = 0;
+float printLV5 = 0;
+float printLV6 = 0;
+float printLV7 = 0;
+float printLV8 = 0;
+float x = 0;
+float y = 0;
+float bearing = 0;
+extern uint16_t NewLVData;
+extern float fromLVvalues[LVNUM_TOFROM_FLOATS];
+extern LVSendFloats_t DataToLabView;
+extern char LVsenddata[LVNUM_TOFROM_FLOATS*4+2];
+extern uint16_t newLinuxCommands;
+extern float LinuxCommands[CMDNUM_FROM_FLOATS];
+
 
 void main(void)
 {
@@ -566,8 +601,8 @@ void main(void)
             //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
             //serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
-            //serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
-            serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
+            serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
+            //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
 
             UARTPrint = 0;
         }
@@ -656,6 +691,7 @@ __interrupt void cpu_timer1_isr(void)
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
+    numTimer2calls++;
     // Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
     LeftWheel=readEncLeft();
@@ -670,39 +706,49 @@ __interrupt void cpu_timer2_isr(void)
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
+    eturn=turn+(VLeftK-VRightK);
+
     PosLeft_K_1=PosLeft_K;
     PosRight_K_1=PosRight_K;
 
-    ek_L=Vref-VLeftK;
+    //ek_L=Vref-VLeftK;
+    ek_L=Vref-VLeftK-Kturn*eturn;
     Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
     // Ik_1_L=Ik_L;
 
-    ek_R=Vref-VRightK;
+    //ek_R=Vref-VRightK;
+    ek_R=Vref-VRightK+Kturn*eturn;
     Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;
     // Ik_1_R=Ik_R;
-    
+
     if (uLeft>=10){
         uLeft=10;
-        Ik_1_L=Ik_L;
+        Ik_1_L=Ik_L*0.95;
     }
     else if (uLeft<=-10){
         uLeft=-10;
+        Ik_1_L=Ik_L*0.95;
+    }
+    else{
         Ik_1_L=Ik_L;
     }
 
     if (uRight>=10){
         uRight=10;
-        Ik_1_R=Ik_R;
+        Ik_1_R=Ik_R*0.95;
     }
     else if (uRight<=-10){
         uRight=-10;
+        Ik_1_R=Ik_R*0.95;
+    }
+    else{
         Ik_1_R=Ik_R;
     }
-    
+
     setEPWM2A(uRight);
     setEPWM2B(-uLeft);
 
@@ -711,6 +757,53 @@ __interrupt void cpu_timer2_isr(void)
     if ((CpuTimer2.InterruptCount % 10) == 0) {
         //		UARTPrint = 1;
     }
+
+    theta_l=LeftWheel;
+    theta_r=RightWheel;
+    phiR=R_Wh/W_R*(theta_r-theta_l);
+    theta_ave=0.5*(theta_r+theta_l);
+    theta_ave_dot=0.5*(theta_r-theta_r_prev+theta_l-theta_l_prev)/0.004;
+    theta_r_prev=theta_r;
+    theta_l_prev=theta_l;
+    x_dot=R_Wh*theta_ave_dot*cos(phiR);
+    y_dot=R_Wh*theta_ave_dot*sin(phiR);
+    x=x+0.5*0.004*(x_dot+x_dot_prev);
+    y=y+0.5*0.004*(y_dot+y_dot_prev);
+    x_dot_prev=x_dot;
+    y_dot_prev=y_dot;
+    if (NewLVData == 1) {
+        NewLVData = 0;
+        Vref = fromLVvalues[0];
+        turn = fromLVvalues[1];
+        printLV3 = fromLVvalues[2];
+        printLV4 = fromLVvalues[3];
+        printLV5 = fromLVvalues[4];
+        printLV6 = fromLVvalues[5];
+        printLV7 = fromLVvalues[6];
+        printLV8 = fromLVvalues[7];
+    }
+
+    if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+        DataToLabView.floatData[0] = x;
+        DataToLabView.floatData[1] = y;
+        DataToLabView.floatData[2] = bearing;
+        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[5] = (float)numTimer0calls;
+        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
+        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
+        LVsenddata[0] = '*'; // header for LVdata
+        LVsenddata[1] = '$';
+        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
+            if (i%2==0) {
+                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
+            } else {
+                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
+            }
+        }
+        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
+    }
+
 }
 
 void setupSpib(void) //Call this function in main() somewhere after the DINT; line of code.
