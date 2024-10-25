@@ -413,6 +413,7 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 1000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    // ZHX ex1 coutimer2 interrupts time outs every 4 milliseconds.
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 4000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -595,10 +596,12 @@ void main(void)
     while(1)
     {
         if (UARTPrint == 1 ) {
+            //ZHX ex1 print IMU values
             //serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
             //			serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
             //			serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
             //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
+            //ZHx ex1 print two wheel angle measurements
             //serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
             serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
@@ -694,9 +697,10 @@ __interrupt void cpu_timer2_isr(void)
     numTimer2calls++;
     // Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
+    //ZHX ex1 call two read function and assign return values be LeftWheel and RightWheel, unit is rad.
     LeftWheel=readEncLeft();
     RightWheel=readEncRight();
-
+    //ZHX ex1 robot move forwad 0.5m andwe got the radian value, following two float variables stores the distace of two wheels
     distanceL=LeftWheel/16.5;
     distanceR=RightWheel/16.5;
 
@@ -1312,38 +1316,31 @@ void init_eQEPs(void) {
     EQep2Regs.QPOSCNT = 0;
     EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
 }
+// ZHX EX1 Optical encoder is in the end of robot's motor.There are 100 silts on the wheel inside the enclosure and encoder sense each slit.So one rotation of the motor creates 100 square wave period per rotation
 float readEncLeft(void) {
     int32_t raw = 0;
     uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U
+    // ZHX EX1 the eQEP counts the pulses using quadrature count mode.
     raw = EQep1Regs.QPOSCNT;
     if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
     // 100 slits in the encoder disk so 100 square waves per one revolution of the
     // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
     // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
+    //ZHX EX1 Converts the eQEP counts to number of radian the wheel.400 counts oer revolution and gear ratio is 30:1. 400*30=12000 
+    //ZHX ex1 when manually rotate the wheel, left wheel in tera term gives the negative value. we negate the multiplication factor to read a positive angle
     return (-raw*(2*PI)/12000.0);
 
 }
 
 
 float readEncRight(void) {
-
-
     int32_t raw = 0;
-
     uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U -1 32bit signed int
-
-
     raw = EQep2Regs.QPOSCNT;
-
     if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-
-
     // 100 slits in the encoder disk so 100 square waves per one revolution of the
-
     // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-
     // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-
     return (raw*(2*PI)/12000.0);
 
 }
