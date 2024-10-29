@@ -134,7 +134,7 @@ float Ki=5;
 float Kturn=3;
 float eturn=0.0;
 float turn=0.0;
-float Vref=0.25;
+float Vref=0.0;
 
 float ek_L=0.0;
 float ek_1_L=0.0;
@@ -153,7 +153,6 @@ float theta_l=0.0;
 float theta_r=0.0;
 float theta_l_prev=0.0;
 float theta_r_prev=0.0;
-float phiR=0.0;
 float theta_ave=0.0;
 float theta_ave_dot=0.0;
 float x_dot=0.0;
@@ -169,7 +168,7 @@ float printLV7 = 0;
 float printLV8 = 0;
 float x = 0;
 float y = 0;
-float bearing = 0;
+float bearing = 0.0;
 extern uint16_t NewLVData;
 extern float fromLVvalues[LVNUM_TOFROM_FLOATS];
 extern LVSendFloats_t DataToLabView;
@@ -717,7 +716,7 @@ __interrupt void cpu_timer2_isr(void)
 
     //ek_L=Vref-VLeftK;
     ek_L=Vref-VLeftK-Kturn*eturn;
-    Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
+    //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
     // Ik_1_L=Ik_L;
@@ -731,26 +730,26 @@ __interrupt void cpu_timer2_isr(void)
 
     if (uLeft>=10){
         uLeft=10;
-        Ik_1_L=Ik_L*0.95;
+        Ik_L=Ik_1_L*0.95;
     }
     else if (uLeft<=-10){
         uLeft=-10;
-        Ik_1_L=Ik_L*0.95;
+        Ik_L=Ik_1_L*0.95;
     }
     else{
-        Ik_1_L=Ik_L;
+        Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     }
 
     if (uRight>=10){
         uRight=10;
-        Ik_1_R=Ik_R*0.95;
+        Ik_R=Ik_1_R*0.95;
     }
     else if (uRight<=-10){
         uRight=-10;
-        Ik_1_R=Ik_R*0.95;
+        Ik_R=Ik_1_R*0.95;
     }
     else{
-        Ik_1_R=Ik_R;
+        Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     }
 
     setEPWM2A(uRight);
@@ -764,13 +763,13 @@ __interrupt void cpu_timer2_isr(void)
 
     theta_l=LeftWheel;
     theta_r=RightWheel;
-    phiR=R_Wh/W_R*(theta_r-theta_l);
+    bearing=R_Wh/W_R*(theta_r-theta_l);
     theta_ave=0.5*(theta_r+theta_l);
     theta_ave_dot=0.5*(theta_r-theta_r_prev+theta_l-theta_l_prev)/0.004;
     theta_r_prev=theta_r;
     theta_l_prev=theta_l;
-    x_dot=R_Wh*theta_ave_dot*cos(phiR);
-    y_dot=R_Wh*theta_ave_dot*sin(phiR);
+    x_dot=R_Wh*theta_ave_dot*cos(bearing);
+    y_dot=R_Wh*theta_ave_dot*sin(bearing);
     x=x+0.5*0.004*(x_dot+x_dot_prev);
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
