@@ -118,7 +118,7 @@ float RightWheel=0.0;
 
 float distanceL=0.0;
 float distanceR=0.0;
-
+// ZHX ex2 uLeft and uRight are two control variables
 float uLeft=5.0;
 float uRight=5.0;
 
@@ -421,7 +421,7 @@ void main(void)
     CpuTimer2Regs.TCR.all = 0x4000;
 
     init_serialSCIA(&SerialA,115200);
-    // ZHX EX1 EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
+    // ZHX EX2 following lines are copied from Lab 3 for intialize the pinmux for EPWM2. EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
     EPwm2Regs.TBCTL.bit.CLKDIV=0; // EEC - set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
     EPwm2Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
     EPwm2Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
@@ -702,19 +702,19 @@ __interrupt void cpu_timer2_isr(void)
     //ZHX ex1 robot move forwad 0.5m andwe got the radian value, following two float variables stores the distace of two wheels
     distanceL=LeftWheel/16.5;
     distanceR=RightWheel/16.5;
-
+    //ZHX ex2 following two variables are the current position of each wheel.
     PosLeft_K=LeftWheel/16.5;
     PosRight_K=RightWheel/16.5;
-
+    //ZHX ex2 following two variables are the raw velocity with some noise, unit is rad/s
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
     eturn=turn+(VLeftK-VRightK);
-
+    //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
     PosLeft_K_1=PosLeft_K;
     PosRight_K_1=PosRight_K;
 
-    //ek_L=Vref-VLeftK;
+    //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
     ek_L=Vref-VLeftK-Kturn*eturn;
     //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
@@ -728,8 +728,10 @@ __interrupt void cpu_timer2_isr(void)
     ek_1_R=ek_R;
     // Ik_1_R=Ik_R;
 
+    // ZHX ex3 To prevent integral wind-up,we implement an anti-windup controller,in other words stop integrating when the control effort is saturated with the limit of 10 and -10。
     if (uLeft>=10){
         uLeft=10;
+        // ZHX ex3 set Ik equal to previous Ik*0.95
         Ik_L=Ik_1_L*0.95;
     }
     else if (uLeft<=-10){
@@ -1331,7 +1333,6 @@ float readEncLeft(void) {
 
 }
 
-
 float readEncRight(void) {
     int32_t raw = 0;
     uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U -1 32bit signed int
@@ -1344,7 +1345,7 @@ float readEncRight(void) {
 
 }
 
-// ZHX EX2 following 2 functions are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
+// ZHX EX2 following 2 functions are copied from Lab3 and they are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
 // ZHX EX2 this function set EPWM2A to a duty cycle value related to the passed controleffort value
 void setEPWM2A(float controleffort){
     if (controleffort>10){
