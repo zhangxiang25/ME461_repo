@@ -723,7 +723,7 @@ __interrupt void cpu_timer2_isr(void)
 
     //ek_R=Vref-VRightK;
     ek_R=Vref-VRightK+Kturn*eturn;
-    Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
+    //Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;
     // Ik_1_R=Ik_R;
@@ -767,7 +767,7 @@ __interrupt void cpu_timer2_isr(void)
     theta_r=RightWheel;
     bearing=R_Wh/W_R*(theta_r-theta_l);
     theta_ave=0.5*(theta_r+theta_l);
-    theta_ave_dot=0.5*(theta_r-theta_r_prev+theta_l-theta_l_prev)/0.004;
+    theta_ave_dot=0.5*(theta_r - theta_r_prev + theta_l - theta_l_prev)/0.004;
     theta_r_prev=theta_r;
     theta_l_prev=theta_l;
     x_dot=R_Wh*theta_ave_dot*cos(bearing);
@@ -776,6 +776,7 @@ __interrupt void cpu_timer2_isr(void)
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
     y_dot_prev=y_dot;
+    
     if (NewLVData == 1) {
         NewLVData = 0;
         Vref = fromLVvalues[0];
