@@ -130,7 +130,7 @@ float VLeftK=0.0;
 float VRightK=0.0;
 
 float Kp=3;
-float Ki=5;
+float Ki=25;
 float Kturn=3;
 float eturn=0.0;
 float turn=0.0;
@@ -159,6 +159,18 @@ float x_dot=0.0;
 float y_dot=0.0;
 float x_dot_prev=0.0;
 float y_dot_prev=0.0;
+
+float Kp_right=0.001;
+float Kp_front=0.0002;
+float ref_right=200;
+float ref_front=1400;
+float distright=0.0;
+float distfront=0.0;
+float Vel_right=0.25;
+float Vel_front=0.25;
+float threshold_1=400;
+float threshold_2=500;
+float right_wall_follow=1;
 
 float printLV3 = 0;
 float printLV4 = 0;
@@ -709,6 +721,33 @@ __interrupt void cpu_timer2_isr(void)
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
+
+    if (measure_status_1 == 0) {
+        distright = dis_1;
+    } else {
+        distright = 1400;  // set to max reading if error
+    }
+    if (measure_status_3 == 0) {
+        distfront = dis_3;
+    } else {
+        distfront = 1400;  // set to max reading if error
+    }
+
+    if (right_wall_follow==1){
+        turn=Kp_right*(ref_right-distright);
+        Vref=Vel_right;
+        if (distfront<threshold_1){
+            right_wall_follow=0;
+        }
+    }
+    else{
+        turn=Kp_front*(ref_front-distfront);
+        Vref=Vel_front;
+        if (distfront>threshold_2){
+            right_wall_follow=1;
+        }
+    }
+
     eturn=turn+(VLeftK-VRightK);
     //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
     PosLeft_K_1=PosLeft_K;
@@ -719,14 +758,14 @@ __interrupt void cpu_timer2_isr(void)
     //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
-    // Ik_1_L=Ik_L;
+
 
     //ek_R=Vref-VRightK;
     ek_R=Vref-VRightK+Kturn*eturn;
     //Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
     uRight=Kp*ek_R+Ki*Ik_R;
     ek_1_R=ek_R;
-    // Ik_1_R=Ik_R;
+
 
     // ZHX ex3 To prevent integral wind-up,we implement an anti-windup controller,in other words stop integrating when the control effort is saturated with the limit of 10 and -10。
     if (uLeft>=10){
@@ -740,6 +779,7 @@ __interrupt void cpu_timer2_isr(void)
     }
     else{
         Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
+        Ik_1_L=Ik_L;
     }
 
     if (uRight>=10){
@@ -752,6 +792,7 @@ __interrupt void cpu_timer2_isr(void)
     }
     else{
         Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
+        Ik_1_R=Ik_R;
     }
 
     setEPWM2A(uRight);
@@ -776,10 +817,12 @@ __interrupt void cpu_timer2_isr(void)
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
     y_dot_prev=y_dot;
-    
+
     if (NewLVData == 1) {
         NewLVData = 0;
-        Vref = fromLVvalues[0];
+        float dummy = 0.0;
+        dummy = fromLVvalues[0];
+        //        Vref = fromLVvalues[0];
         turn = fromLVvalues[1];
         printLV3 = fromLVvalues[2];
         printLV4 = fromLVvalues[3];
@@ -811,6 +854,7 @@ __interrupt void cpu_timer2_isr(void)
     }
 
 }
+
 
 void setupSpib(void) //Call this function in main() somewhere after the DINT; line of code.
 {
