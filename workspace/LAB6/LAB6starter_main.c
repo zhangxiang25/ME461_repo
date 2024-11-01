@@ -412,6 +412,7 @@ void main(void)
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
     // ----- code for CAN start here -----
     PieVectTable.CANB0_INT = &can_isr;
+    PieVectTable.ADCA1_INT= &ADCA_ISR;
     // ----- code for CAN end here -----	
     EDIS;    // This is needed to disable write to EALLOW protected registers
 
@@ -456,6 +457,34 @@ void main(void)
 
     GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); // EPWM2A is GPIO2
     GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1); // EPWM2B is GPIO3
+
+    EALLOW;
+    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
+    AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+
+    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+    //Set pulse positions to late
+    AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    //power up the ADCs
+    AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    //delay for 1ms to allow ADC time to power up
+    DELAY_US(1000);
+    //Select the channels to convert and end of conversion flag
+    //Many statements commented out, To be used when using ADCA or ADCB
+    //ADCA
+    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //ZHX EX3 We have already used channel 0 and 1, so we use channel 2 hereSOC0 will convert Channel you choose Does not have to be A0
+    AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //ZHX EX3 SOC1 will convert Channel you choose Does not have to be A1, In this case we choose channel 3
+    AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //ZHX EX3 set to last SOC that is converted and it will set INT1 flag ADCA1, In this case we use SOC0 and SOC1,so the last SOC is 1.
+    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+    EDIS;
 
     setupSpib();
     init_eQEPs();
@@ -623,7 +652,32 @@ void main(void)
     }
 }
 
-
+__interrupt void ADCA_ISR (void) {
+    adca0result = AdcaResultRegs.ADCRESULT0;
+    adca1result = AdcaResultRegs.ADCRESULT1;
+    //ZHX EX3 Convert ADCINA2, ADCINA3 to volts
+    xk_1[0] = adca0result*3.0/4095.0;
+    xk_2[0] = adca1result*3.0/4095.0;
+    yk1 = 0;
+    yk2 = 0;
+    // ZHX EX3 the filtered value from 21st order filter of both rotaion yk1 and yk2
+    for(int k=0;k<22;k++){
+        yk1 += b[k]*xk_1[k];
+        yk2 += b[k]*xk_2[k];
+    }
+    // ZHX EX3 save past states before exiting from the function
+    for(int j=21;j>0;j--){
+        xk_1[j] = xk_1[j-1];
+        xk_2[j] = xk_2[j-1];
+    }
+    // Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
+    ADCA1_COUNT++;
+    if(ADCA1_COUNT%100==1){
+        UARTPrint=1;
+    }
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+}
 // SWI_isr,  Using this interrupt as a Software started interrupt
 __interrupt void SWI_isr(void) {
 
