@@ -188,6 +188,44 @@ extern char LVsenddata[LVNUM_TOFROM_FLOATS*4+2];
 extern uint16_t newLinuxCommands;
 extern float LinuxCommands[CMDNUM_FROM_FLOATS];
 
+//LAB4
+float yk1=0;
+float yk2=0;
+float xk_1[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
+float xk_2[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
+
+interrupt void ADCA_ISR (void);
+
+int16_t adca0result=0;
+int16_t adca1result=0;
+
+int32_t ADCA1_COUNT=0;
+
+//Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
+// ZHX EX2 we type b=fir1(22,75/500) in the matlab
+float b[22]={   -2.3890045153263611e-03,
+                -3.3150057635348224e-03,
+                -4.6136191242627002e-03,
+                -4.1659855521681268e-03,
+                1.4477422497795286e-03,
+                1.5489414225159667e-02,
+                3.9247886844071371e-02,
+                7.0723964095458614e-02,
+                1.0453473887246176e-01,
+                1.3325672639406205e-01,
+                1.4978314227429904e-01,
+                1.4978314227429904e-01,
+                1.3325672639406205e-01,
+                1.0453473887246176e-01,
+                7.0723964095458614e-02,
+                3.9247886844071371e-02,
+                1.5489414225159667e-02,
+                1.4477422497795286e-03,
+                -4.1659855521681268e-03,
+                -4.6136191242627002e-03,
+                -3.3150057635348224e-03,
+                -2.3890045153263611e-03};
+
 
 void main(void)
 {
@@ -433,6 +471,25 @@ void main(void)
     CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
 
+    //LAB4
+    EALLOW;
+    // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
+    EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
+    EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
+    EPwm5Regs.ETSEL.bit.SOCASEL = 2; // ZHX EX1.1 SOCASEL has 3 bits, 2 to binary is 010. It enable event time-base counter equal to period(TBCTR=TBPRD)
+    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // ZHX EX1.1 SOCAPRD has 2 bits. It generate pulse on 1st event
+    EPwm5Regs.TBCTR = 0x0; // Clear counter
+    EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
+    EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
+    EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
+    EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms,so sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
+    //EPwm5Regs.TBPRD = 12500; // ZHX EX4 the sample rate of microphone is 0.25ms so TBPRD=50M/4000=12500Hz
+    //EPwm5Regs.TBPRD = 5000; // ZHX EX4 For the band pass filter with sample rate of 10000Hz
+    // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
+    EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
+    EPwm5Regs.TBCTL.bit.CTRMODE = 0; //ZHX EX1.1 Counter Mode(CTRMODE 2 bits) unfreeze, and enter up count mode
+    EDIS;
+
     init_serialSCIA(&SerialA,115200);
     // ZHX EX2 following lines are copied from Lab 3 for intialize the pinmux for EPWM2. EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
     EPwm2Regs.TBCTL.bit.CLKDIV=0; // EEC - set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
@@ -465,9 +522,6 @@ void main(void)
     AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
     //Set pulse positions to late
     AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-    AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-    AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-    AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
     //power up the ADCs
     AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
     //delay for 1ms to allow ADC time to power up
@@ -508,6 +562,9 @@ void main(void)
     // ----- code for CAN start here -----
     // Enable CANB in the PIE: Group 9 interrupt 7
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
+    //LAB4
+    //ZHX EX3 enable PE interrupt 1.1
+    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // ----- code for CAN end here -----
 
     // ----- code for CAN start here -----
@@ -646,6 +703,8 @@ void main(void)
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
             serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
+            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
+            //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
 
             UARTPrint = 0;
         }
@@ -775,33 +834,36 @@ __interrupt void cpu_timer2_isr(void)
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
+// right wall following
+//    if (measure_status_1 == 0) {
+//        distright = dis_1;
+//    } else {
+//        distright = 1400;  // set to max reading if error
+//    }
+//    if (measure_status_3 == 0) {
+//        distfront = dis_3;
+//    } else {
+//        distfront = 1400;  // set to max reading if error
+//    }
+//
+//    if (right_wall_follow==1){
+//        turn=Kp_right*(ref_right-distright);
+//        Vref=Vel_right;
+//        if (distfront<threshold_1){
+//            right_wall_follow=0;
+//        }
+//    }
+//    else{
+//        turn=Kp_front*(ref_front-distfront);
+//        Vref=Vel_front;
+//        if (distfront>threshold_2){
+//            right_wall_follow=1;
+//        }
+//    }
 
-    if (measure_status_1 == 0) {
-        distright = dis_1;
-    } else {
-        distright = 1400;  // set to max reading if error
-    }
-    if (measure_status_3 == 0) {
-        distfront = dis_3;
-    } else {
-        distfront = 1400;  // set to max reading if error
-    }
-
-    if (right_wall_follow==1){
-        turn=Kp_right*(ref_right-distright);
-        Vref=Vel_right;
-        if (distfront<threshold_1){
-            right_wall_follow=0;
-        }
-    }
-    else{
-        turn=Kp_front*(ref_front-distfront);
-        Vref=Vel_front;
-        if (distfront>threshold_2){
-            right_wall_follow=1;
-        }
-    }
-
+    // EX8
+    Vref=-yk2/6+0.5;
+    turn=-0.181*yk1+0.293;
     eturn=turn+(VLeftK-VRightK);
     //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
     PosLeft_K_1=PosLeft_K;
@@ -877,7 +939,7 @@ __interrupt void cpu_timer2_isr(void)
         float dummy = 0.0;
         dummy = fromLVvalues[0];
         //        Vref = fromLVvalues[0];
-        turn = fromLVvalues[1];
+        //turn = fromLVvalues[1];
         printLV3 = fromLVvalues[2];
         printLV4 = fromLVvalues[3];
         printLV5 = fromLVvalues[4];
