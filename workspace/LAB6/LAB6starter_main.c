@@ -60,9 +60,7 @@ void setEPWM2B(float controleffort);
 
 // Count variables
 uint32_t numTimer0calls = 0;
-
 uint32_t numTimer2calls = 0;
-
 uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
@@ -146,7 +144,7 @@ float ek_1_R=0.0;
 float Ik_R=0.0;
 float Ik_1_R=0.0;
 
-
+//ZHX ex6 define variables
 float R_Wh=0.0593;
 float W_R=0.173;
 float theta_l=0.0;
@@ -159,7 +157,7 @@ float x_dot=0.0;
 float y_dot=0.0;
 float x_dot_prev=0.0;
 float y_dot_prev=0.0;
-
+//ZHX ex7 define variables
 float Kp_right=0.001;
 float Kp_front=0.0002;
 float ref_right=200;
@@ -188,7 +186,7 @@ extern char LVsenddata[LVNUM_TOFROM_FLOATS*4+2];
 extern uint16_t newLinuxCommands;
 extern float LinuxCommands[CMDNUM_FROM_FLOATS];
 
-//LAB4
+//ZHX ex8 paste from LAB4
 float yk1=0;
 float yk2=0;
 float xk_1[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
@@ -198,11 +196,10 @@ interrupt void ADCA_ISR (void);
 
 int16_t adca0result=0;
 int16_t adca1result=0;
-
 int32_t ADCA1_COUNT=0;
 
 //Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
-// ZHX EX2 we type b=fir1(22,75/500) in the matlab
+// ZHX we type b=fir1(22,75/500) in the matlab
 float b[22]={   -2.3890045153263611e-03,
                 -3.3150057635348224e-03,
                 -4.6136191242627002e-03,
@@ -450,6 +447,7 @@ void main(void)
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
     // ----- code for CAN start here -----
     PieVectTable.CANB0_INT = &can_isr;
+  //ZHX ex8 paste from lab4, tell processor to call defined function &ADCA_ISR
     PieVectTable.ADCA1_INT= &ADCA_ISR;
     // ----- code for CAN end here -----	
     EDIS;    // This is needed to disable write to EALLOW protected registers
@@ -471,7 +469,7 @@ void main(void)
     CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
 
-    //LAB4
+    //ZHX ex8 paste from LAB4 using EPWM5 to trigger ADCA channel
     EALLOW;
     // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
     EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
@@ -515,10 +513,10 @@ void main(void)
     GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); // EPWM2A is GPIO2
     GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1); // EPWM2B is GPIO3
 
+  //ZHX ex8 paste from lab4
     EALLOW;
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-
     AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
     //Set pulse positions to late
     AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
@@ -562,8 +560,8 @@ void main(void)
     // ----- code for CAN start here -----
     // Enable CANB in the PIE: Group 9 interrupt 7
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
-    //LAB4
-    //ZHX EX3 enable PE interrupt 1.1
+    //ZHX ex8 paste from LAB4
+    //ZHX enable PE interrupt 1.1(ADCA1)
     PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // ----- code for CAN end here -----
 
@@ -703,14 +701,14 @@ void main(void)
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
             serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
-            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
+            // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
             //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
 
             UARTPrint = 0;
         }
     }
 }
-
+//ZHX ex8 paste from lab4
 __interrupt void ADCA_ISR (void) {
     adca0result = AdcaResultRegs.ADCRESULT0;
     adca1result = AdcaResultRegs.ADCRESULT1;
@@ -834,7 +832,7 @@ __interrupt void cpu_timer2_isr(void)
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
-// right wall following
+//ZHX ex7 right wall following
 //    if (measure_status_1 == 0) {
 //        distright = dis_1;
 //    } else {
@@ -847,30 +845,32 @@ __interrupt void cpu_timer2_isr(void)
 //    }
 //
 //    if (right_wall_follow==1){
-//        turn=Kp_right*(ref_right-distright);
+//        turn=Kp_right*(ref_right-distright);//ZHX ex7 right wall following controller
 //        Vref=Vel_right;
-//        if (distfront<threshold_1){
-//            right_wall_follow=0;
+//        if (distfront<threshold_1){  // close to front wall
+//            right_wall_follow=0; // activate left turn
 //        }
 //    }
 //    else{
-//        turn=Kp_front*(ref_front-distfront);
+//        turn=Kp_front*(ref_front-distfront); // left turn controller
 //        Vref=Vel_front;
-//        if (distfront>threshold_2){
-//            right_wall_follow=1;
+//        if (distfront>threshold_2){ // front wall is far away
+//            right_wall_follow=1; // resume right wall following
 //        }
 //    }
 
-    // EX8
-    Vref=-yk2/6+0.5;
-    turn=-0.181*yk1+0.293;
+    // ZHX EX8
+    Vref=-yk2/6+0.5; // convert x voltage to Vref (0-0.5)
+    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25 - 0.293
+  
+  
     eturn=turn+(VLeftK-VRightK);
     //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
     PosLeft_K_1=PosLeft_K;
     PosRight_K_1=PosRight_K;
 
     //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
-    ek_L=Vref-VLeftK-Kturn*eturn;
+    ek_L=Vref-VLeftK-Kturn*eturn; //ZHX ex4 implement a steering controller. turn setpoint controls the amount by which motor's speed exceed the other motor's speed.
     //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
@@ -919,7 +919,7 @@ __interrupt void cpu_timer2_isr(void)
     if ((CpuTimer2.InterruptCount % 10) == 0) {
         //		UARTPrint = 1;
     }
-
+//ZHX EX6 calculation the new pose of the robot car
     theta_l=LeftWheel;
     theta_r=RightWheel;
     bearing=R_Wh/W_R*(theta_r-theta_l);
@@ -929,6 +929,7 @@ __interrupt void cpu_timer2_isr(void)
     theta_l_prev=theta_l;
     x_dot=R_Wh*theta_ave_dot*cos(bearing);
     y_dot=R_Wh*theta_ave_dot*sin(bearing);
+  //ZHX ex6 Using trapezoidal rule
     x=x+0.5*0.004*(x_dot+x_dot_prev);
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
@@ -938,7 +939,8 @@ __interrupt void cpu_timer2_isr(void)
         NewLVData = 0;
         float dummy = 0.0;
         dummy = fromLVvalues[0];
-        //        Vref = fromLVvalues[0];
+      // ZHX ex6 first 2 values send from labview is Vref and turn
+        //Vref = fromLVvalues[0];
         //turn = fromLVvalues[1];
         printLV3 = fromLVvalues[2];
         printLV4 = fromLVvalues[3];
@@ -949,6 +951,7 @@ __interrupt void cpu_timer2_isr(void)
     }
 
     if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+      // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
         DataToLabView.floatData[0] = x;
         DataToLabView.floatData[1] = y;
         DataToLabView.floatData[2] = bearing;
