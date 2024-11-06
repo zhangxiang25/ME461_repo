@@ -50,23 +50,8 @@ __interrupt void can_isr(void);
 __interrupt void SPIB_isr(void);
 void setupSpib(void);
 
-void init_eQEPs(void);
-float readEncLeft(void);
-float readEncRight(void);
-
-//ZHX EX2 predefinition for functions
-void setEPWM2A(float controleffort);
-void setEPWM2B(float controleffort);
-
 // Count variables
 uint32_t numTimer0calls = 0;
-<<<<<<< HEAD
-
-uint32_t numTimer2calls = 0;
-
-=======
-uint32_t numTimer2calls = 0;
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
 uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
@@ -117,138 +102,6 @@ uint32_t measure_status_3 = 0;
 volatile uint32_t errorFlag = 0;
 // ----- code for CAN end here -----
 
-float LeftWheel=0.0;
-float RightWheel=0.0;
-
-float distanceL=0.0;
-float distanceR=0.0;
-// ZHX ex2 uLeft and uRight are two control variables
-float uLeft=5.0;
-float uRight=5.0;
-
-float PosLeft_K=0.0;
-float PosRight_K=0.0;
-float PosLeft_K_1=0.0;
-float PosRight_K_1=0.0;
-float VLeftK=0.0;
-float VRightK=0.0;
-
-float Kp=3;
-float Ki=25;
-float Kturn=3;
-float eturn=0.0;
-float turn=0.0;
-float Vref=0.0;
-
-float ek_L=0.0;
-float ek_1_L=0.0;
-float Ik_L=0.0;
-float Ik_1_L=0.0;
-
-float ek_R=0.0;
-float ek_1_R=0.0;
-float Ik_R=0.0;
-float Ik_1_R=0.0;
-
-<<<<<<< HEAD
-
-=======
-//ZHX ex6 define variables
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-float R_Wh=0.0593;
-float W_R=0.173;
-float theta_l=0.0;
-float theta_r=0.0;
-float theta_l_prev=0.0;
-float theta_r_prev=0.0;
-float theta_ave=0.0;
-float theta_ave_dot=0.0;
-float x_dot=0.0;
-float y_dot=0.0;
-float x_dot_prev=0.0;
-float y_dot_prev=0.0;
-<<<<<<< HEAD
-
-=======
-//ZHX ex7 define variables
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-float Kp_right=0.001;
-float Kp_front=0.0002;
-float ref_right=200;
-float ref_front=1400;
-float distright=0.0;
-float distfront=0.0;
-float Vel_right=0.25;
-float Vel_front=0.25;
-float threshold_1=400;
-float threshold_2=500;
-float right_wall_follow=1;
-
-float printLV3 = 0;
-float printLV4 = 0;
-float printLV5 = 0;
-float printLV6 = 0;
-float printLV7 = 0;
-float printLV8 = 0;
-float x = 0;
-float y = 0;
-float bearing = 0.0;
-extern uint16_t NewLVData;
-extern float fromLVvalues[LVNUM_TOFROM_FLOATS];
-extern LVSendFloats_t DataToLabView;
-extern char LVsenddata[LVNUM_TOFROM_FLOATS*4+2];
-extern uint16_t newLinuxCommands;
-extern float LinuxCommands[CMDNUM_FROM_FLOATS];
-
-<<<<<<< HEAD
-//LAB4
-=======
-//ZHX ex8 paste from LAB4
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-float yk1=0;
-float yk2=0;
-float xk_1[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
-float xk_2[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
-
-interrupt void ADCA_ISR (void);
-
-int16_t adca0result=0;
-int16_t adca1result=0;
-<<<<<<< HEAD
-
-int32_t ADCA1_COUNT=0;
-
-//Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
-// ZHX EX2 we type b=fir1(22,75/500) in the matlab
-=======
-int32_t ADCA1_COUNT=0;
-
-//Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
-// ZHX we type b=fir1(22,75/500) in the matlab
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-float b[22]={   -2.3890045153263611e-03,
-                -3.3150057635348224e-03,
-                -4.6136191242627002e-03,
-                -4.1659855521681268e-03,
-                1.4477422497795286e-03,
-                1.5489414225159667e-02,
-                3.9247886844071371e-02,
-                7.0723964095458614e-02,
-                1.0453473887246176e-01,
-                1.3325672639406205e-01,
-                1.4978314227429904e-01,
-                1.4978314227429904e-01,
-                1.3325672639406205e-01,
-                1.0453473887246176e-01,
-                7.0723964095458614e-02,
-                3.9247886844071371e-02,
-                1.5489414225159667e-02,
-                1.4477422497795286e-03,
-                -4.1659855521681268e-03,
-                -4.6136191242627002e-03,
-                -3.3150057635348224e-03,
-                -2.3890045153263611e-03};
-
 
 void main(void)
 {
@@ -257,93 +110,93 @@ void main(void)
     InitSysCtrl();
 
     InitGpio();
-
-    // Blue LED on LaunchPad
+	
+	// Blue LED on LaunchPad
     GPIO_SetupPinMux(31, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(31, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPASET.bit.GPIO31 = 1;
 
-    // Red LED on LaunchPad
+	// Red LED on LaunchPad
     GPIO_SetupPinMux(34, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(34, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPBSET.bit.GPIO34 = 1;
 
-    // LED1 and PWM Pin
+	// LED1 and PWM Pin
     GPIO_SetupPinMux(22, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(22, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPACLEAR.bit.GPIO22 = 1;
-
-    // LED2
+	
+	// LED2
     GPIO_SetupPinMux(94, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(94, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPCCLEAR.bit.GPIO94 = 1;
 
-    // LED3
+	// LED3
     GPIO_SetupPinMux(95, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(95, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPCCLEAR.bit.GPIO95 = 1;
 
-    // LED4
+	// LED4
     GPIO_SetupPinMux(97, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(97, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPDCLEAR.bit.GPIO97 = 1;
 
-    // LED5
+	// LED5
     GPIO_SetupPinMux(111, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(111, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPDCLEAR.bit.GPIO111 = 1;
 
-    // LED6
+	// LED6
     GPIO_SetupPinMux(130, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(130, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPECLEAR.bit.GPIO130 = 1;
 
-    // LED7
+	// LED7	
     GPIO_SetupPinMux(131, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(131, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPECLEAR.bit.GPIO131 = 1;
 
-    // LED8
+	// LED8
     GPIO_SetupPinMux(25, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(25, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPACLEAR.bit.GPIO25 = 1;
 
-    // LED9
+	// LED9
     GPIO_SetupPinMux(26, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(26, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPACLEAR.bit.GPIO26 = 1;
 
-    // LED10
+	// LED10
     GPIO_SetupPinMux(27, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(27, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPACLEAR.bit.GPIO27 = 1;
 
-    // LED11
+	// LED11	
     GPIO_SetupPinMux(60, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(60, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPBCLEAR.bit.GPIO60 = 1;
 
-    // LED12
+	// LED12	
     GPIO_SetupPinMux(61, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(61, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPBCLEAR.bit.GPIO61 = 1;
 
-    // LED13
+	// LED13
     GPIO_SetupPinMux(157, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(157, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPECLEAR.bit.GPIO157 = 1;
 
-    // LED14
+	// LED14
     GPIO_SetupPinMux(158, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(158, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPECLEAR.bit.GPIO158 = 1;
-
-    // LED15
+	
+	// LED15
     GPIO_SetupPinMux(159, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(159, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPECLEAR.bit.GPIO159 = 1;
 
-    // LED16
+	// LED16
     GPIO_SetupPinMux(160, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(160, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPFCLEAR.bit.GPIO160 = 1;
@@ -358,7 +211,7 @@ void main(void)
     GPIO_SetupPinOptions(1, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPASET.bit.GPIO1 = 1;
 
-    //SPIRAM  CS  Chip Select
+	//SPIRAM  CS  Chip Select
     GPIO_SetupPinMux(19, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(19, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPASET.bit.GPIO19 = 1;
@@ -377,17 +230,17 @@ void main(void)
     GPIO_SetupPinMux(9, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(9, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPASET.bit.GPIO9 = 1;
-
+	
     //MPU9250  CS  Chip Select
     GPIO_SetupPinMux(66, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(66, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
-
-    //WIZNET  CS  Chip Select
+	
+	//WIZNET  CS  Chip Select
     GPIO_SetupPinMux(125, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(125, GPIO_OUTPUT, GPIO_PUSHPULL);
     GpioDataRegs.GPDSET.bit.GPIO125 = 1;
-
+	
     //PushButton 1
     GPIO_SetupPinMux(4, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(4, GPIO_INPUT, GPIO_PULLUP);
@@ -403,8 +256,8 @@ void main(void)
     //PushButton 4
     GPIO_SetupPinMux(7, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(7, GPIO_INPUT, GPIO_PULLUP);
-
-    //Joy Stick Pushbutton
+	
+	//Joy Stick Pushbutton
     GPIO_SetupPinMux(8, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(8, GPIO_INPUT, GPIO_PULLUP);
 
@@ -473,11 +326,6 @@ void main(void)
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
     // ----- code for CAN start here -----
     PieVectTable.CANB0_INT = &can_isr;
-<<<<<<< HEAD
-=======
-  //ZHX ex8 paste from lab4, tell processor to call defined function &ADCA_ISR
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    PieVectTable.ADCA1_INT= &ADCA_ISR;
     // ----- code for CAN end here -----	
     EDIS;    // This is needed to disable write to EALLOW protected registers
 
@@ -490,102 +338,21 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 1000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
-    // ZHX ex1 coutimer2 interrupts time outs every 4 milliseconds.
-    ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 4000);
+    ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 40000);
 
     // Enable CpuTimer Interrupt bit TIE
     CpuTimer0Regs.TCR.all = 0x4000;
     CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
 
-<<<<<<< HEAD
-    //LAB4
-=======
-    //ZHX ex8 paste from LAB4 using EPWM5 to trigger ADCA channel
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    EALLOW;
-    // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
-    EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
-    EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
-    EPwm5Regs.ETSEL.bit.SOCASEL = 2; // ZHX EX1.1 SOCASEL has 3 bits, 2 to binary is 010. It enable event time-base counter equal to period(TBCTR=TBPRD)
-    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // ZHX EX1.1 SOCAPRD has 2 bits. It generate pulse on 1st event
-    EPwm5Regs.TBCTR = 0x0; // Clear counter
-    EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
-    EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
-    EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
-    EPwm5Regs.TBPRD = 50000; // ZHX EX1.1 Sample period to 1ms,so sample frequency is 1000Hz and input clock is 50MHz, so the TBPRD=50M/1000=50000.
-    //EPwm5Regs.TBPRD = 12500; // ZHX EX4 the sample rate of microphone is 0.25ms so TBPRD=50M/4000=12500Hz
-    //EPwm5Regs.TBPRD = 5000; // ZHX EX4 For the band pass filter with sample rate of 10000Hz
-    // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
-    EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
-    EPwm5Regs.TBCTL.bit.CTRMODE = 0; //ZHX EX1.1 Counter Mode(CTRMODE 2 bits) unfreeze, and enter up count mode
-    EDIS;
-
-    init_serialSCIA(&SerialA,115200);
-    // ZHX EX2 following lines are copied from Lab 3 for intialize the pinmux for EPWM2. EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
-    EPwm2Regs.TBCTL.bit.CLKDIV=0; // EEC - set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
-    EPwm2Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
-    EPwm2Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
-    EPwm2Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL.
-
-    EPwm2Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
-
-    EPwm2Regs.TBPRD=2500; //EEC - Sets the period to 2500 clock cycles
-
-    EPwm2Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0% for the right motor. CMPA(counter compare a register) determine the duty cycle for the right motor.
-    EPwm2Regs.CMPB.bit.CMPB=0; // the duty cycle at beginning is 0% for the left motor. CMPA(counter compare a register) determine the duty cycle for the left motor.
-
-    EPwm2Regs.AQCTLA.bit.CAU=1; // EEC - Set output low when counter reaches CMPA value
-    EPwm2Regs.AQCTLA.bit.ZRO=2; // EEC - Set output high when counter reaches zero
-    // ZHX EX1 different with EPWM12A, EPWM2B had additional AQCTLB and CMPB.
-    EPwm2Regs.AQCTLB.bit.CBU=1; // EEC - Set output low when counter reaches CMPB value
-    EPwm2Regs.AQCTLB.bit.ZRO=2; // EEC - Set output high when counter reaches zero
-
-    EPwm2Regs.TBPHS.bit.TBPHS=0;
-
-    GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); // EPWM2A is GPIO2
-    GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1); // EPWM2B is GPIO3
-
-<<<<<<< HEAD
-    EALLOW;
-    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
-    AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-
-=======
-  //ZHX ex8 paste from lab4
-    EALLOW;
-    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
-    AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-    //Set pulse positions to late
-    AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-    //power up the ADCs
-    AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-    //delay for 1ms to allow ADC time to power up
-    DELAY_US(1000);
-    //Select the channels to convert and end of conversion flag
-    //Many statements commented out, To be used when using ADCA or ADCB
-    //ADCA
-    AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //ZHX EX3 We have already used channel 0 and 1, so we use channel 2 hereSOC0 will convert Channel you choose Does not have to be A0
-    AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-    AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //ZHX EX3 SOC1 will convert Channel you choose Does not have to be A1, In this case we choose channel 3
-    AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-    AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //ZHX EX3 set to last SOC that is converted and it will set INT1 flag ADCA1, In this case we use SOC0 and SOC1,so the last SOC is 1.
-    AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
-    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
-    EDIS;
-
+	init_serialSCIA(&SerialA,115200);
     setupSpib();
-    init_eQEPs();
-
+	
     // Enable CPU int1 which is connected to CPU-Timer 0, CPU int13
     // which is connected to CPU-Timer 1, and CPU int 14, which is connected
     // to CPU-Timer 2:  int 12 is for the SWI.  
     IER |= M_INT1;
-    IER |= M_INT6;
+	IER |= M_INT6;
     IER |= M_INT8;  // SCIC SCID
     IER |= M_INT9;  // SCIA  CANB
     IER |= M_INT12;
@@ -594,29 +361,21 @@ void main(void)
 
     // Enable TINT0 in the PIE: Group 1 interrupt 7
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
-    // Enable SWI in the PIE: Group 12 interrupt 9
+	// Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
-    PieCtrlRegs.PIEIER6.bit.INTx3 = 1;  //SPiB
+	PieCtrlRegs.PIEIER6.bit.INTx3 = 1;  //SPiB
     // ----- code for CAN start here -----
     // Enable CANB in the PIE: Group 9 interrupt 7
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
-<<<<<<< HEAD
-    //LAB4
-    //ZHX EX3 enable PE interrupt 1.1
-=======
-    //ZHX ex8 paste from LAB4
-    //ZHX enable PE interrupt 1.1(ADCA1)
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // ----- code for CAN end here -----
 
     // ----- code for CAN start here -----
     // Enable the CAN interrupt signal
     CanbRegs.CAN_GLB_INT_EN.bit.GLBINT0_EN = 1;
     // ----- code for CAN end here -----
-
-    init_serialSCIC(&SerialC,115200);
-    init_serialSCID(&SerialD,115200);
+	
+	init_serialSCIC(&SerialC,115200);
+	init_serialSCID(&SerialD,115200);
     // Enable global Interrupts and higher priority real-time debug events
     EINT;  // Enable Global interrupt INTM
     ERTM;  // Enable Global realtime interrupt DBGM
@@ -729,81 +488,38 @@ void main(void)
 
     // ----- code for CAN end here -----
 
-
-
-
+    
     // IDLE loop. Just sit and loop forever (optional):
     while(1)
     {
         if (UARTPrint == 1 ) {
-            //ZHX ex1 print IMU values
-            //serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
-            //			serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
-            //			serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
-            //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
-            //ZHx ex1 print two wheel angle measurements
-            //serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
-            //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
-            serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
-            //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
-<<<<<<< HEAD
-            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
-=======
-            // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-            //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
+			//serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
+			serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
+			serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
+            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
 
             UARTPrint = 0;
         }
     }
 }
-<<<<<<< HEAD
 
-=======
-//ZHX ex8 paste from lab4
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-__interrupt void ADCA_ISR (void) {
-    adca0result = AdcaResultRegs.ADCRESULT0;
-    adca1result = AdcaResultRegs.ADCRESULT1;
-    //ZHX EX3 Convert ADCINA2, ADCINA3 to volts
-    xk_1[0] = adca0result*3.0/4095.0;
-    xk_2[0] = adca1result*3.0/4095.0;
-    yk1 = 0;
-    yk2 = 0;
-    // ZHX EX3 the filtered value from 21st order filter of both rotaion yk1 and yk2
-    for(int k=0;k<22;k++){
-        yk1 += b[k]*xk_1[k];
-        yk2 += b[k]*xk_2[k];
-    }
-    // ZHX EX3 save past states before exiting from the function
-    for(int j=21;j>0;j--){
-        xk_1[j] = xk_1[j-1];
-        xk_2[j] = xk_2[j-1];
-    }
-    // Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
-    ADCA1_COUNT++;
-    if(ADCA1_COUNT%100==1){
-        UARTPrint=1;
-    }
-    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-}
+
 // SWI_isr,  Using this interrupt as a Software started interrupt
 __interrupt void SWI_isr(void) {
 
     // These three lines of code allow SWI_isr, to be interrupted by other interrupt functions
-    // making it lower priority than all other Hardware interrupts.
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
+	// making it lower priority than all other Hardware interrupts.  
+	PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
     asm("       NOP");                    // Wait one cycle
     EINT;                                 // Clear INTM to enable interrupts
-
-
-
+	
+	
+	
     // Insert SWI ISR Code here.......
-
-
+	
+	
     numSWIcalls++;
-
+    
     DINT;
 
 }
@@ -815,9 +531,9 @@ __interrupt void cpu_timer0_isr(void)
 
     numTimer0calls++;
 
-    //    if ((numTimer0calls%50) == 0) {
-    //        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
-    //    }
+//    if ((numTimer0calls%50) == 0) {
+//        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
+//    }
 
     if ((numTimer0calls%250) == 0) {
         displayLEDletter(LEDdisplaynum);
@@ -826,8 +542,8 @@ __interrupt void cpu_timer0_isr(void)
             LEDdisplaynum = 0;
         }
     }
-
-
+	
+	
     //Clear GPIO9 Low to act as a Slave Select. Right now, just to scope. Later to select DAN28027 chip
     //GpioDataRegs.GPACLEAR.bit.GPIO9 = 1;
     //    SpibRegs.SPIFFRX.bit.RXFFIL = 2; // Issue the SPIB_RX_INT when two values are in the RX FIFO
@@ -850,8 +566,8 @@ __interrupt void cpu_timer0_isr(void)
 
 
     if ((numTimer0calls%50) == 0) {
-        // Blink LaunchPad Red LED
-        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
+		// Blink LaunchPad Red LED
+		GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
     }
 
 
@@ -862,213 +578,22 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-
+		
     CpuTimer1.InterruptCount++;
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
-    numTimer2calls++;
-    // Blink LaunchPad Blue LED
+	// Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-    //ZHX ex1 call two read function and assign return values be LeftWheel and RightWheel, unit is rad.
-    LeftWheel=readEncLeft();
-    RightWheel=readEncRight();
-    //ZHX ex1 robot move forwad 0.5m andwe got the radian value, following two float variables stores the distace of two wheels
-    distanceL=LeftWheel/16.5;
-    distanceR=RightWheel/16.5;
-    //ZHX ex2 following two variables are the current position of each wheel.
-    PosLeft_K=LeftWheel/16.5;
-    PosRight_K=RightWheel/16.5;
-    //ZHX ex2 following two variables are the raw velocity with some noise, unit is rad/s
-    VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
-    VRightK=(PosRight_K-PosRight_K_1)/0.004;
-
-<<<<<<< HEAD
-// right wall following
-=======
-//ZHX ex7 right wall following
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-//    if (measure_status_1 == 0) {
-//        distright = dis_1;
-//    } else {
-//        distright = 1400;  // set to max reading if error
-//    }
-//    if (measure_status_3 == 0) {
-//        distfront = dis_3;
-//    } else {
-//        distfront = 1400;  // set to max reading if error
-//    }
-//
-//    if (right_wall_follow==1){
-<<<<<<< HEAD
-//        turn=Kp_right*(ref_right-distright);
-//        Vref=Vel_right;
-//        if (distfront<threshold_1){
-//            right_wall_follow=0;
-//        }
-//    }
-//    else{
-//        turn=Kp_front*(ref_front-distfront);
-//        Vref=Vel_front;
-//        if (distfront>threshold_2){
-//            right_wall_follow=1;
-//        }
-//    }
-
-    // EX8
-    Vref=-yk2/6+0.5;
-    turn=-0.181*yk1+0.293;
-=======
-//        turn=Kp_right*(ref_right-distright);//ZHX ex7 right wall following controller
-//        Vref=Vel_right;
-//        if (distfront<threshold_1){  // close to front wall
-//            right_wall_follow=0; // activate left turn
-//        }
-//    }
-//    else{
-//        turn=Kp_front*(ref_front-distfront); // left turn controller
-//        Vref=Vel_front;
-//        if (distfront>threshold_2){ // front wall is far away
-//            right_wall_follow=1; // resume right wall following
-//        }
-//    }
-
-    // ZHX EX8
-    Vref=-yk2/6+0.5; // convert x voltage to Vref (0-0.5)
-    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25 - 0.293
-  
-  
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    eturn=turn+(VLeftK-VRightK);
-    //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
-    PosLeft_K_1=PosLeft_K;
-    PosRight_K_1=PosRight_K;
-
-    //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
-<<<<<<< HEAD
-    ek_L=Vref-VLeftK-Kturn*eturn;
-=======
-    ek_L=Vref-VLeftK-Kturn*eturn; //ZHX ex4 implement a steering controller. turn setpoint controls the amount by which motor's speed exceed the other motor's speed.
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
-    uLeft=Kp*ek_L+Ki*Ik_L;
-    ek_1_L=ek_L;
-
-
-    //ek_R=Vref-VRightK;
-    ek_R=Vref-VRightK+Kturn*eturn;
-    //Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
-    uRight=Kp*ek_R+Ki*Ik_R;
-    ek_1_R=ek_R;
-
-
-    // ZHX ex3 To prevent integral wind-up,we implement an anti-windup controller,in other words stop integrating when the control effort is saturated with the limit of 10 and -10。
-    if (uLeft>=10){
-        uLeft=10;
-        // ZHX ex3 set Ik equal to previous Ik*0.95
-        Ik_L=Ik_1_L*0.95;
-    }
-    else if (uLeft<=-10){
-        uLeft=-10;
-        Ik_L=Ik_1_L*0.95;
-    }
-    else{
-        Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
-        Ik_1_L=Ik_L;
-    }
-
-    if (uRight>=10){
-        uRight=10;
-        Ik_R=Ik_1_R*0.95;
-    }
-    else if (uRight<=-10){
-        uRight=-10;
-        Ik_R=Ik_1_R*0.95;
-    }
-    else{
-        Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
-        Ik_1_R=Ik_R;
-    }
-
-    setEPWM2A(uRight);
-    setEPWM2B(-uLeft);
 
     CpuTimer2.InterruptCount++;
-
-    if ((CpuTimer2.InterruptCount % 10) == 0) {
-        //		UARTPrint = 1;
-    }
-<<<<<<< HEAD
-
-=======
-//ZHX EX6 calculation the new pose of the robot car
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    theta_l=LeftWheel;
-    theta_r=RightWheel;
-    bearing=R_Wh/W_R*(theta_r-theta_l);
-    theta_ave=0.5*(theta_r+theta_l);
-    theta_ave_dot=0.5*(theta_r - theta_r_prev + theta_l - theta_l_prev)/0.004;
-    theta_r_prev=theta_r;
-    theta_l_prev=theta_l;
-    x_dot=R_Wh*theta_ave_dot*cos(bearing);
-    y_dot=R_Wh*theta_ave_dot*sin(bearing);
-<<<<<<< HEAD
-=======
-  //ZHX ex6 Using trapezoidal rule
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-    x=x+0.5*0.004*(x_dot+x_dot_prev);
-    y=y+0.5*0.004*(y_dot+y_dot_prev);
-    x_dot_prev=x_dot;
-    y_dot_prev=y_dot;
-
-    if (NewLVData == 1) {
-        NewLVData = 0;
-        float dummy = 0.0;
-        dummy = fromLVvalues[0];
-<<<<<<< HEAD
-        //        Vref = fromLVvalues[0];
-=======
-      // ZHX ex6 first 2 values send from labview is Vref and turn
-        //Vref = fromLVvalues[0];
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-        //turn = fromLVvalues[1];
-        printLV3 = fromLVvalues[2];
-        printLV4 = fromLVvalues[3];
-        printLV5 = fromLVvalues[4];
-        printLV6 = fromLVvalues[5];
-        printLV7 = fromLVvalues[6];
-        printLV8 = fromLVvalues[7];
-    }
-
-    if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
-<<<<<<< HEAD
-=======
-      // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
->>>>>>> 951f872d9494939aea216946a4b2e091d601decb
-        DataToLabView.floatData[0] = x;
-        DataToLabView.floatData[1] = y;
-        DataToLabView.floatData[2] = bearing;
-        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
-        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
-        DataToLabView.floatData[5] = (float)numTimer0calls;
-        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
-        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
-        LVsenddata[0] = '*'; // header for LVdata
-        LVsenddata[1] = '$';
-        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
-            if (i%2==0) {
-                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
-            } else {
-                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
-            }
-        }
-        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
-    }
-
+	
+	if ((CpuTimer2.InterruptCount % 10) == 0) {
+//		UARTPrint = 1;
+	}
 }
-
 
 void setupSpib(void) //Call this function in main() somewhere after the DINT; line of code.
 {
@@ -1260,37 +785,37 @@ void setupSpib(void) //Call this function in main() somewhere after the DINT; li
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7700 | 0x0016); // 0x7700
+    SpibRegs.SPITXBUF = (0x7700 | 0x00EB); // 0x7700
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7800 | 0x00AE); // 0x7800
+    SpibRegs.SPITXBUF = (0x7800 | 0x0012); // 0x7800
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7A00 | 0x00E9); // 0x7A00
+    SpibRegs.SPITXBUF = (0x7A00 | 0x0010); // 0x7A00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7B00 | 0x0018); // 0x7B00
+    SpibRegs.SPITXBUF = (0x7B00 | 0x00FA); // 0x7B00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7D00 | 0x001C); // 0x7D00
+    SpibRegs.SPITXBUF = (0x7D00 | 0x0021); // 0x7D00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPITXBUF = (0x7E00 | 0x005C); // 0x7E00
+    SpibRegs.SPITXBUF = (0x7E00 | 0x0050); // 0x7E00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
@@ -1339,12 +864,15 @@ __interrupt void SPIB_isr(void) {
 __interrupt void can_isr(void)
 {
     int i = 0;
+
     uint32_t status;
+
     GpioDataRegs.GPBSET.bit.GPIO52 = 1;
     //
     // Read the CAN interrupt status to find the cause of the interrupt
     //
     status = CANgetInterruptCause(CANB_BASE);
+
     //
     // If the cause is a controller status interrupt, then get the status
     //
@@ -1358,7 +886,9 @@ __interrupt void can_isr(void)
         // The act of reading this status will clear the interrupt.
         //
         status = CANgetStatus(CANB_BASE);
+
     }
+
     //
     // Check if the cause is the transmit message object 1
     //
@@ -1470,6 +1000,8 @@ __interrupt void can_isr(void)
 
         lightlevel_1 = ((256.0*256.0*256.0)*lightlevel_raw_1[3] + (256.0*256.0)*lightlevel_raw_1[2] + 256.0*lightlevel_raw_1[1] + lightlevel_raw_1[0])/65535;
         quality_1 = ((256.0*256.0*256.0)*quality_raw_1[3] + (256.0*256.0)*quality_raw_1[2] + 256.0*quality_raw_1[1] + quality_raw_1[0])/65535;
+
+
         //
         // Getting to this point means that the RX interrupt occurred on
         // message object 2, and the message RX is complete.  Clear the
@@ -1483,16 +1015,20 @@ __interrupt void can_isr(void)
         errorFlag = 0;
         GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
     }
+
+
     else if(status == RX_MSG_OBJ_ID_4)
     {
         //
         // Get the received message
         //
         CANreadMessage(CANB_BASE, RX_MSG_OBJ_ID_4, rxMsgData);
+
         for(i = 0; i<4; i++)
         {
             lightlevel_raw_3[i] = rxMsgData[i];
             quality_raw_3[i] = rxMsgData[i+4];
+
         }
 
         lightlevel_3 = ((256.0*256.0*256.0)*lightlevel_raw_3[3] + (256.0*256.0)*lightlevel_raw_3[2] + 256.0*lightlevel_raw_3[1] + lightlevel_raw_3[0])/65535;
@@ -1511,6 +1047,9 @@ __interrupt void can_isr(void)
         errorFlag = 0;
         GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
     }
+
+
+
     //
     // If something unexpected caused the interrupt, this would handle it.
     //
@@ -1520,110 +1059,15 @@ __interrupt void can_isr(void)
         // Spurious interrupt handling can go here.
         //
     }
+
     //
     // Clear the global interrupt flag for the CAN interrupt line
     //
     CANclearGlobalInterruptStatus(CANB_BASE, CAN_GLOBAL_INT_CANINT0);
+
     //
     // Acknowledge this interrupt located in group 9
     //
     InterruptclearACKGroup(INTERRUPT_ACK_GROUP9);
 }
 // ----- code for CAN end here -----
-void init_eQEPs(void) {
-
-    // setup eQEP1 pins for input
-    EALLOW;
-    //Disable internal pull-up for the selected output pins for reduced power consumption
-    GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1; // Disable pull-up on GPIO20 (EQEP1A)
-    GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1; // Disable pull-up on GPIO21 (EQEP1B)
-    GpioCtrlRegs.GPAQSEL2.bit.GPIO20 = 2; // Qual every 6 samples
-    GpioCtrlRegs.GPAQSEL2.bit.GPIO21 = 2; // Qual every 6 samples
-    EDIS;
-
-    // This specifies which of the possible GPIO pins will be EQEP1 functional pins.
-    // Comment out other unwanted lines.
-    GPIO_SetupPinMux(20, GPIO_MUX_CPU1, 1);
-    GPIO_SetupPinMux(21, GPIO_MUX_CPU1, 1);
-    EQep1Regs.QEPCTL.bit.QPEN = 0; // make sure eqep in reset
-    EQep1Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-    EQep1Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-    EQep1Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-    EQep1Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-    EQep1Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count
-    EQep1Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend in Code Composer
-    EQep1Regs.QPOSCNT = 0;
-    EQep1Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
-
-    // setup QEP2 pins for input
-    EALLOW;
-    //Disable internal pull-up for the selected output pinsfor reduced power consumption
-    GpioCtrlRegs.GPBPUD.bit.GPIO54 = 1; // Disable pull-up on GPIO54 (EQEP2A)
-    GpioCtrlRegs.GPBPUD.bit.GPIO55 = 1; // Disable pull-up on GPIO55 (EQEP2B)
-    GpioCtrlRegs.GPBQSEL2.bit.GPIO54 = 2; // Qual every 6 samples
-    GpioCtrlRegs.GPBQSEL2.bit.GPIO55 = 2; // Qual every 6 samples
-
-    EDIS;
-    GPIO_SetupPinMux(54, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2A
-    GPIO_SetupPinMux(55, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2B
-    EQep2Regs.QEPCTL.bit.QPEN = 0; // make sure qep reset
-    EQep2Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-    EQep2Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-    EQep2Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-    EQep2Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-    EQep2Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count.
-    EQep2Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend
-    EQep2Regs.QPOSCNT = 0;
-    EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
-}
-// ZHX EX1 Optical encoder is in the end of robot's motor.There are 100 silts on the wheel inside the enclosure and encoder sense each slit.So one rotation of the motor creates 100 square wave period per rotation
-float readEncLeft(void) {
-    int32_t raw = 0;
-    uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U
-    // ZHX EX1 the eQEP counts the pulses using quadrature count mode.
-    raw = EQep1Regs.QPOSCNT;
-    if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-    // 100 slits in the encoder disk so 100 square waves per one revolution of the
-    // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-    // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-    //ZHX EX1 Converts the eQEP counts to number of radian the wheel.400 counts oer revolution and gear ratio is 30:1. 400*30=12000 
-    //ZHX ex1 when manually rotate the wheel, left wheel in tera term gives the negative value. we negate the multiplication factor to read a positive angle
-    return (-raw*(2*PI)/12000.0);
-
-}
-
-float readEncRight(void) {
-    int32_t raw = 0;
-    uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U -1 32bit signed int
-    raw = EQep2Regs.QPOSCNT;
-    if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-    // 100 slits in the encoder disk so 100 square waves per one revolution of the
-    // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-    // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-    return (raw*(2*PI)/12000.0);
-
-}
-
-// ZHX EX2 following 2 functions are copied from Lab3 and they are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
-// ZHX EX2 this function set EPWM2A to a duty cycle value related to the passed controleffort value
-void setEPWM2A(float controleffort){
-    if (controleffort>10){
-        controleffort=10;
-    }
-    if (controleffort<-10){
-        controleffort=10;
-    }
-    //ZHX EX2 when the control effort is -10, duty cycle is 0%;0 is 50% and 10 is 100%. CMPA&TBPRD are 16 bit integer and controleffort is a float, there is a type conversion.
-    //ZHX EX2 duty cycle greater than 50% will cause the motor spin in postive direction, duty cycle less than 50% cause the motor spin in negative direction.
-    EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
-}
-// ZHX EX2 similar to void setEPWM2A(float controleffort)
-void setEPWM2B(float controleffort){
-    if (controleffort>10){
-        controleffort=10;
-    }
-    if (controleffort<-10){
-        controleffort=10;
-    }
-    EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
-}
