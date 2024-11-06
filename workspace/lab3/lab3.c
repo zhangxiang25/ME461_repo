@@ -16,7 +16,8 @@
 #include "device.h"
 #include "F28379dSerial.h"
 #include "LEDPatterns.h"
-#include "song.h"
+// ZHX EX4 We are going to play a long song in our code.
+//#include "song.h"
 #include "dsp.h"
 #include "fpu32/fpu_rfft.h"
 
@@ -41,10 +42,302 @@ uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 int16_t updown=1;
 int16_t dancount=0;
+float dancount2=0;
+float dancount3=0;
+int16_t notecount=0;
+//ZHX EX2 predefinition for functions
+void setEPWM2A(float controleffort);
+void setEPWM2B(float controleffort);
+//ZHX EX3 predefinition for functions
+void setEPWM8A_RCServo(float angle);
+void setEPWM8B_RCServo(float angle);
+//ZHX EX4 for the C4note (((50000000/2)/2)/261.63)),
+// 50000000 is 50MHz(the clock frequency),the first 2 is CLKDIV defined in 'EPwm9Regs.TBCTL.bit.CLKDIV=1;'.the second 2,the square toggle between high and low states. 
+// Since the timer needs to count both the high and low portions of the waveform, you divide the frequency by 2 again to ensure that the full period of the square wave is considered.
+#define C4NOTE ((uint16_t)(((50000000/2)/2)/261.63))
+#define D4NOTE ((uint16_t)(((50000000/2)/2)/293.66))
+#define E4NOTE ((uint16_t)(((50000000/2)/2)/329.63))
+#define F4NOTE ((uint16_t)(((50000000/2)/2)/349.23))
+#define G4NOTE ((uint16_t)(((50000000/2)/2)/392.00))
+#define A4NOTE ((uint16_t)(((50000000/2)/2)/440.00))
+#define B4NOTE ((uint16_t)(((50000000/2)/2)/493.88))
+#define C5NOTE ((uint16_t)(((50000000/2)/2)/523.25))
+#define D5NOTE ((uint16_t)(((50000000/2)/2)/587.33))
+#define E5NOTE ((uint16_t)(((50000000/2)/2)/659.25))
+#define F5NOTE ((uint16_t)(((50000000/2)/2)/698.46))
+#define G5NOTE ((uint16_t)(((50000000/2)/2)/783.99))
+#define A5NOTE ((uint16_t)(((50000000/2)/2)/880.00))
+#define B5NOTE ((uint16_t)(((50000000/2)/2)/987.77))
+#define E6NOTE ((uint16_t)(((50000000/2)/2)/1318.51))
+#define F4SHARPNOTE ((uint16_t)(((50000000/2)/2)/369.99))
+#define A4FLATNOTE ((uint16_t)(((50000000/2)/2)/415.3))
+#define C5SHARPNOTE ((uint16_t)(((50000000/2)/2)/554.37))
+#define D5SHARPNOTE ((uint16_t)(((50000000/2)/2)/622.25))
+#define A5FLATNOTE ((uint16_t)(((50000000/2)/2)/830.61))
+#define OFFNOTE 0
+// ZHX EX4 this part of the song "Fur Elise" have 255 notes(including offnotes),put all the notes in the array'SONG_LENGTH'
+#define SONG_LENGTH 255
+uint16_t songarray[SONG_LENGTH] = {
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+B4NOTE,
+B4NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+OFFNOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+A4NOTE,
+A4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+OFFNOTE,
+E4NOTE,
+E4NOTE,
+F4SHARPNOTE,
+F4SHARPNOTE,
+B4NOTE,
+B4NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+OFFNOTE,
+E4NOTE,
+E4NOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+B4NOTE,
+B4NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+OFFNOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+A4NOTE,
+A4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+OFFNOTE,
+D4NOTE,
+D4NOTE,
+C5NOTE,
+C5NOTE,
+B4NOTE,
+B4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+OFFNOTE, // PART A
+B4NOTE,
+B4NOTE,
+C5NOTE,
+C5NOTE,
+D5NOTE,
+D5NOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+G4NOTE,
+G4NOTE,
+F5NOTE,
+F5NOTE,
+E5NOTE,
+E5NOTE,
+D5NOTE,
+D5NOTE,
+D5NOTE,
+D5NOTE,
+D5NOTE,
+D5NOTE,
+F4NOTE,
+F4NOTE,
+E5NOTE,
+E5NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+E4NOTE,
+E4NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+OFFNOTE, // PART B
+E4NOTE,
+E4NOTE,
+E5NOTE,
+E5NOTE,
+E4NOTE,
+E4NOTE,
+E5NOTE,
+E5NOTE,
+OFFNOTE,
+E5NOTE,
+E5NOTE,
+E6NOTE,
+E6NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+B4NOTE,
+B4NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+OFFNOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+A4NOTE,
+A4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+OFFNOTE,
+E4NOTE,
+E4NOTE,
+F4SHARPNOTE,
+F4SHARPNOTE,
+B4NOTE,
+B4NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+C5NOTE,
+OFFNOTE,
+E4NOTE,
+E4NOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+D5SHARPNOTE,
+D5SHARPNOTE,
+E5NOTE,
+E5NOTE,
+B4NOTE,
+B4NOTE,
+D5NOTE,
+D5NOTE,
+C5NOTE,
+C5NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+OFFNOTE,
+C4NOTE,
+C4NOTE,
+E4NOTE,
+E4NOTE,
+A4NOTE,
+A4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+B4NOTE,
+OFFNOTE,
+D4NOTE,
+D4NOTE,
+C5NOTE,
+C5NOTE,
+B4NOTE,
+B4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+A4NOTE,
+};
+
+
 void main(void)
 {
-
-
 
     // PLL, WatchDog, enable Peripheral Clocks
     // This example function is found in the F2837xD_SysCtrl.c file.
@@ -251,7 +544,8 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
-    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+	//ZHX EX4 CpuTimer1 is called every 125 milliseconds(0.125s). This means each note of the song takes 0.125s
+    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -259,93 +553,97 @@ void main(void)
     CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
 
-	init_serialSCIA(&SerialA,115200);
+    init_serialSCIA(&SerialA,115200);
+    // ZHX EX1 set up the EPWM registers for EPWM12A
+	// ZHX EX1 for the definition of TBCTL and AQCTLA,we can type EPwm12Regs then selecting"Open declaration" 
+	EPwm12Regs.TBCTL.bit.CLKDIV=0; // set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
+	EPwm12Regs.TBCTL.bit.PHSEN=0; // disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+	EPwm12Regs.TBCTL.bit.CTRMODE=0; // count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+	EPwm12Regs.TBCTL.bit.FREE_SOFT=2; // free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
+	// 0 means stop after the next time -base counter increment or decrement.1 meansStop then counter completes a whole cycle
+	EPwm12Regs.TBCTR=0; // time base counter register is 0. TBCTR is a 16-bit register
+	EPwm12Regs.TBPRD=2500; // time base period register is 2500. 
+	// we know the clock source has a frequency of 50MHz and we need the period of PWM signal be 20kHz. 20k*TBPRD=50M. TBPRD=2500
 
-	EPwm12Regs.TBCTL.bit.CLKDIV=0;
-	EPwm12Regs.TBCTL.bit.PHSEN=0;
-	EPwm12Regs.TBCTL.bit.CTRMODE=0;
-	EPwm12Regs.TBCTL.bit.FREE_SOFT=2;
+    EPwm12Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0%.CMPA(counter compare a register) determine the duty cycle
 
-	EPwm12Regs.TBCTR=0;
+    EPwm12Regs.AQCTLA.bit.CAU=1; // when TBCTR=CMPA clear the signal pin. CAU takes up 2 bits of the AQCTLA register,4 values can be assigned to it.
+// 0 is do nothing; 2 is set EPWMxA to high; 3 is toggle EPWNxA output
+    EPwm12Regs.AQCTLA.bit.ZRO=2; // when TBCTR=0, make the pin be set, force output high. ZRO takes up 2 bits,4 values can be assigned to it.
+// 0 is do nothing; 1 is clear(force EPWMxA output low; 3 is toogle EPWMxA output.
 
-	EPwm12Regs.TBPRD=2500;
+    EPwm12Regs.TBPHS.bit.TBPHS=0; // set the phase to 0. TBPHS(time base phase high) has two parts:TBPHS and TBPHSHR, each part had 16-bit.
+// ZHX EX1 TBCTR counter with a 50MHz,CLKDIV is 5. After the divide, 50/(2^5)=50/32,so the period is 32/50M. TBPRD=39062, the period of PWm signal is 32/50M*39062
+	
+// ZHX EX1 EPWM2A and 2B drive the robot's DC motors.EPWM2A controls right motor and EPWM2B controls left motor
+    EPwm2Regs.TBCTL.bit.CLKDIV=0; // EEC - set the CLKDIV be 1. CLKDIV takes 3 bits in TBCTL rigister the smallest number we could set is 0 and the largest number is 7(111 in decimal)
+    EPwm2Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm2Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm2Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
 
-    EPwm12Regs.CMPA.bit.CMPA=0;
+    EPwm2Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
 
-    EPwm12Regs.AQCTLA.bit.CAU=1;
-	EPwm12Regs.AQCTLA.bit.ZRO=2;
+    EPwm2Regs.TBPRD=2500; //EEC - Sets the period to 2500 clock cycles
 
-    EPwm12Regs.TBPHS.bit.TBPHS=0;
+    EPwm2Regs.CMPA.bit.CMPA=0; // the duty cycle at beginning is 0% for the right motor. CMPA(counter compare a register) determine the duty cycle for the right motor.
+    EPwm2Regs.CMPB.bit.CMPB=0; // the duty cycle at beginning is 0% for the left motor. CMPA(counter compare a register) determine the duty cycle for the left motor.
 
-
-
-    EPwm2Regs.TBCTL.bit.CLKDIV=0;
-    EPwm2Regs.TBCTL.bit.PHSEN=0;
-    EPwm2Regs.TBCTL.bit.CTRMODE=0;
-    EPwm2Regs.TBCTL.bit.FREE_SOFT=2;
-
-    EPwm2Regs.TBCTR=0;
-
-    EPwm2Regs.TBPRD=2500;
-
-    EPwm2Regs.CMPA.bit.CMPA=0;
-    EPwm2Regs.CMPB.bit.CMPB=0;
-
-    EPwm2Regs.AQCTLA.bit.CAU=1;
-    EPwm2Regs.AQCTLA.bit.ZRO=2;
-    EPwm2Regs.AQCTLB.bit.CBU=1;
-    EPwm2Regs.AQCTLB.bit.ZRO=2;
+    EPwm2Regs.AQCTLA.bit.CAU=1; // EEC - Set output low when counter reaches CMPA value
+    EPwm2Regs.AQCTLA.bit.ZRO=2; // EEC - Set output high when counter reaches zero
+// ZHX EX1 different with EPWM12A, EPWM2B had additional AQCTLB and CMPB.
+    EPwm2Regs.AQCTLB.bit.CBU=1; // EEC - Set output low when counter reaches CMPB value
+    EPwm2Regs.AQCTLB.bit.ZRO=2; // EEC - Set output high when counter reaches zero
 
     EPwm2Regs.TBPHS.bit.TBPHS=0;
 
+// ZHX EX1 EPWM8A and 8B controls 2 rc servos. 
+    EPwm8Regs.TBCTL.bit.CLKDIV=4; // ZHX EX3 the frequency of EPWM8 is 50MHz 50000000/2^4=3125000
+    EPwm8Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm8Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm8Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
+    EPwm8Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
+	
+// ZHX EX3 we want the RC servo carrier frequency be 50Hz 50*TBPRD=3125000,so TBPRD=62500
+    EPwm8Regs.TBPRD=62500; // ZHX EX3 TBPRD is a 16-bit register,the largest number we can set is 2^16-1=65535
 
+    EPwm8Regs.CMPA.bit.CMPA=5000;// ZHX EX3 the intialvalue of CMPA and CMPB is commanding the servo to 8% duty cycle 0.08*62500(TBPRD)=5000
+    EPwm8Regs.CMPB.bit.CMPB=5000;
 
-    EPwm8Regs.TBCTL.bit.CLKDIV=0;
-    EPwm8Regs.TBCTL.bit.PHSEN=0;
-    EPwm8Regs.TBCTL.bit.CTRMODE=0;
-    EPwm8Regs.TBCTL.bit.FREE_SOFT=2;
-
-    EPwm8Regs.TBCTR=0;
-
-    EPwm8Regs.TBPRD=2500;
-
-    EPwm8Regs.CMPA.bit.CMPA=0;
-    EPwm8Regs.CMPB.bit.CMPB=0;
-
-    EPwm8Regs.AQCTLA.bit.CAU=1;
-    EPwm8Regs.AQCTLA.bit.ZRO=2;
-    EPwm8Regs.AQCTLB.bit.CBU=1;
-    EPwm8Regs.AQCTLB.bit.ZRO=2;
+    EPwm8Regs.AQCTLA.bit.CAU=1; // EEC - Set output low when counter reaches CMPA value
+    EPwm8Regs.AQCTLA.bit.ZRO=2; // EEC - Set output high when counter reaches zero
+    EPwm8Regs.AQCTLB.bit.CBU=1; // EEC - Set output low when counter reaches CMPB value
+    EPwm8Regs.AQCTLB.bit.ZRO=2; // EEC - Set output high when counter reaches zero
 
     EPwm8Regs.TBPHS.bit.TBPHS=0;
 
+	// ZHX EX1 EPWM9A drives the buzzer
 
+    EPwm9Regs.TBCTL.bit.CLKDIV=1;
+    EPwm9Regs.TBCTL.bit.PHSEN=0; // EEC - disable the phase loading which means do not load the TBCTR from the TBPHS(time base phase register)
+    EPwm9Regs.TBCTL.bit.CTRMODE=0; // EEC - count up mode. CTRMODE takes 2 bits in TBCTL,down count mode is 1;up-down count mode is 2; freeze counter operation is 3
+    EPwm9Regs.TBCTL.bit.FREE_SOFT=2; // EEC - free run so that the PWM continues when you set a break point in your code. FREE_SOFT takes 2 bits in TBCTL. 
 
-    EPwm9Regs.TBCTL.bit.CLKDIV=0;
-    EPwm9Regs.TBCTL.bit.PHSEN=0;
-    EPwm9Regs.TBCTL.bit.CTRMODE=0;
-    EPwm9Regs.TBCTL.bit.FREE_SOFT=2;
+    EPwm9Regs.TBCTR=0; //EEC - Reset the counter to zero for consistency
 
-    EPwm9Regs.TBCTR=0;
+    EPwm9Regs.TBPRD=0; //EEC - Sets the period to zero. 
+// ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
+    // EPwm9Regs.CMPA.bit.CMPA=0;
 
-    EPwm9Regs.TBPRD=2500;
-
-    EPwm9Regs.CMPA.bit.CMPA=0;
-
-    EPwm9Regs.AQCTLA.bit.CAU=1;
-    EPwm9Regs.AQCTLA.bit.ZRO=2;
+    EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 when CMPA is reached, no action is needed
+    EPwm9Regs.AQCTLA.bit.ZRO=3; // ZHX EX4 when TBCTR=0, set to 3 to toggle the LOW or HIGH output of the PMW. This is to show on the oscilliscope the operation signal
 
     EPwm9Regs.TBPHS.bit.TBPHS=0;
 
+	//ZHX EX1 use the GPIO_SetupPinMux() function to change the pin output by using PinMux table
+    GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1); // EPWM2A is GPIO2
+    GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1); // EPWM2B is GPIO3
+    GPIO_SetupPinMux(22,GPIO_MUX_CPU1,5);// EPWM12A is used  instead of GPIO22
+    GPIO_SetupPinMux(14,GPIO_MUX_CPU1,1);// EPWM8A is GPIO14
+    GPIO_SetupPinMux(15,GPIO_MUX_CPU1,1);// EPWM8B is GPIO15
+    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,5);// EPWM9A is GPIO16
 
-    GPIO_SetupPinMux(2,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(3,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(22,GPIO_MUX_CPU1,5);
-    GPIO_SetupPinMux(14,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(15,GPIO_MUX_CPU1,1);
-    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,5);
-
-    EALLOW;
+    EALLOW; // Below are pretected register
+// ZHX EX1 disable the pull-up resistor when an I/O pin is set as a PWM output pin
     GpioCtrlRegs.GPAPUD.bit.GPIO2=1;
     GpioCtrlRegs.GPAPUD.bit.GPIO3=1;
     GpioCtrlRegs.GPAPUD.bit.GPIO14=1;
@@ -421,6 +719,9 @@ __interrupt void cpu_timer0_isr(void)
 
     if ((numTimer0calls%25) == 0) {
         // displayLEDletter(LEDdisplaynum);
+	// ZHX EX1 comment out this code in order to see EPWM12A signal drives LED1 with 0% duty cycle(led should be off)
+	// ZHX EX1 For chaging the CMPA register, in CCS View-Register-find the register you want->(expand).
+	// ZHX EX! CMPA=TBPRD--100% duty cycle
         LEDdisplaynum++;
         if (LEDdisplaynum == 0xFFFF) {  // prevent roll over exception
             LEDdisplaynum = 0;
@@ -440,8 +741,16 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-		
-    CpuTimer1.InterruptCount++;
+// ZHX EX4 set TBPRD to the value currently stored in songarray(we are in the beginning of the song,notecount=0)
+	EPwm9Regs.TBPRD=songarray[notecount];
+	if (notecount<SONG_LENGTH){
+	    notecount++; //ZHX EX4 increasing notecount to keep track where are we in the song
+	}
+
+	if (notecount==SONG_LENGTH){
+	    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,0);// ZHX EX4 when the song ended,change the pin from EPWM9A to GPIO16
+	    GpioDataRegs.GPACLEAR.bit.GPIO16=1; // ZHX EX4 Set GPIO16 to low so the buzzer does not make any noise
+	}
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
@@ -450,11 +759,12 @@ __interrupt void cpu_timer2_isr(void)
 
 	// Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-
-    if(updown==1){
-        dancount++;
-        if(dancount>=2500){
-            updown=0;
+// ZHX EX1 when the updown is equal to 1,count up by 1. 2500 is the TBPRD, when dancount reach that value,switch counting and decrease the value by 1.
+// In this way we can change the duty cycle from 0 to 100 then from 100 to 0.
+    /*if(updown==1){ 
+        dancount++; 
+        if(dancount>=2500){ 
+            updown=0; 
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
     }
@@ -465,12 +775,88 @@ __interrupt void cpu_timer2_isr(void)
         }
         EPwm12Regs.CMPA.bit.CMPA=dancount;
     }
+// ZHX EX2 we create a global variable dancount2. when the updown is equal to 1,count up. 
+// we gradually increase the dancount2 to 10 with step of 0.01 then switch to decreasing dancount2 to -10 then repeat.
+    if (updown==1){
+        dancount2 = dancount2+0.01;
+	    if (dancount2>10) {
+	        updown=0;
+	    }
+	    }
+    else {
+        dancount2= dancount2-0.01;
+	    if (dancount2<-10) {
+	        updown= 1;
+	        }
+	    }
+	setEPWM2A(dancount2);
+	setEPWM2B(dancount2);
 
+	*/
+	//ZHX EX3 dancount3 variable is for Servo motor,gradually change this value so the servo is driven back and forth
+    if (updown==1){
+            dancount3 = dancount3+0.05;
+            if (dancount3>90) {
+                updown=0;
+            }
+            }
+        else {
+            dancount3= dancount3-0.05;
+            if (dancount3<-90) {
+                updown= 1;
+                }
+            }
+
+    setEPWM8A_RCServo(dancount3);
+    setEPWM8B_RCServo(dancount3);
 
     CpuTimer2.InterruptCount++;
 	
-	if ((CpuTimer2.InterruptCount % 10) == 0) {
+	if ((CpuTimer2.InterruptCount % 100) == 0) {
 		UARTPrint = 1;
 	}
 }
-
+// ZHX EX2 following 2 functions are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
+// ZHX EX2 this function set EPWM2A to a duty cycle value related to the passed controleffort value
+void setEPWM2A(float controleffort){
+	if (controleffort>10){
+		controleffort=10;
+	}
+	if (controleffort<-10){
+		controleffort=10;
+	}
+	//ZHX EX2 when the control effort is -10, duty cycle is 0%;0 is 50% and 10 is 100%. CMPA&TBPRD are 16 bit integer and controleffort is a float, there is a type conversion.
+	//ZHX EX2 duty cycle greater than 50% will cause the motor spin in postive direction, duty cycle less than 50% cause the motor spin in negative direction.
+	EPwm2Regs.CMPA.bit.CMPA = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
+}
+// ZHX EX2 similar to void setEPWM2A(float controleffort)
+void setEPWM2B(float controleffort){
+	if (controleffort>10){
+		controleffort=10;
+	}
+	if (controleffort<-10){
+		controleffort=10;
+	}
+	EPwm2Regs.CMPB.bit.CMPB = (int16_t)((controleffort + 10)/20*((float)EPwm2Regs.TBPRD));
+}
+// ZHX EX3 following two functions will firstly saturate angle between -90 to 90 degree in case the value outside this range, then find relationship between angle and CMPA.
+void setEPWM8A_RCServo(float angle){
+	if(angle > 90) {
+		angle = 90;
+	}
+	if(angle < -90) {
+		angle = -90;
+	}
+	// ZHX EX3 angle is a variable between -90 to 90.-90 equals 4% duty cycle, 0 equals 8%, 90 equals 12%.CMPA is a 16 bit int,but angel is a float,so we first calculate the float version then change it to int.
+	EPwm8Regs.CMPA.bit.CMPA =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
+		}
+//ZHX EX3 similar to void setEPWM8A_RCServo()
+void setEPWM8B_RCServo(float angle){
+	if(angle > 90) {
+		angle = 90;
+	}
+	if(angle < -90) {
+		angle = -90;
+	}
+	EPwm8Regs.CMPB.bit.CMPB =(int16_t)((angle+180.0)/180.0*0.08*(float)(EPwm8Regs.TBPRD));
+		}
