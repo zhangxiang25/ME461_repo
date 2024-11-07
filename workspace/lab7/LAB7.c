@@ -172,7 +172,7 @@ float ref_right=200;
 float ref_front=1400;
 float distright=0.0;
 float distfront=0.0;
-float Vel_right=0.25;
+float vel_Right=0.25;
 float Vel_front=0.25;
 float threshold_1=400;
 float threshold_2=500;
@@ -238,6 +238,56 @@ float b[22]={   -2.3890045153263611e-03,
                 -3.3150057635348224e-03,
                 -2.3890045153263611e-03};
 
+
+//lab7
+// Needed global Variables
+float accelx_offset = 0;
+float accely_offset = 0;
+float accelz_offset = 0;
+float gyrox_offset = 0;
+float gyroy_offset = 0;
+float gyroz_offset = 0;
+float accelzBalancePoint = -.76;
+int16 IMU_data[9];
+uint16_t temp=0;
+int16_t doneCal = 0;
+float tilt_value = 0;
+float tilt_array[4] = {0, 0, 0, 0};
+float gyro_value = 0;
+float gyro_array[4] = {0, 0, 0, 0};
+//float LeftWheel = 0;
+//float RightWheel = 0;
+
+float LeftWheelArray[4] = {0,0,0,0};
+float RightWheelArray[4] = {0,0,0,0};
+// Kalman Filter vars
+float T = 0.001; //sample rate, 1ms
+float Q = 0.01; // made global to enable changing in runtime
+float R = 25000;//50000;
+float kalman_tilt = 0;
+float kalman_P = 22.365;
+//int16_t SpibNumCalls = -1;
+float pred_P = 0;
+float kalman_K = 0;
+int32_t timecount = 0;
+int16_t calibration_state = 0;
+int32_t calibration_count = 0;
+
+
+float vel_Left = 0;
+float vel_Left_1=0;
+float vel_Right_1=0;
+float LeftWheelPrev=0;
+float RightWheelPrev=0;
+float gyro_value_1 = 0;
+float ubal = 0;
+
+float gyrorate_dot=0;
+float gyrorate_dot_1=0;
+float K_1=-60;
+float K_2=-4.5;
+float K_3=-1.1;
+float K_4=-0.1;
 
 void main(void)
 {
@@ -464,10 +514,10 @@ void main(void)
     PieVectTable.CANB0_INT = &can_isr;
 
 
-  //ZHX ex8 paste from lab4, tell processor to call defined function &ADCA_ISR
+    //ZHX ex8 paste from lab4, tell processor to call defined function &ADCA_ISR
 
     PieVectTable.ADCA1_INT= &ADCA_ISR;
-    // ----- code for CAN end here -----	
+    // ----- code for CAN end here -----
     EDIS;    // This is needed to disable write to EALLOW protected registers
 
 
@@ -540,7 +590,7 @@ void main(void)
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
 
 
-  //ZHX ex8 paste from lab4
+    //ZHX ex8 paste from lab4
     EALLOW;
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
@@ -726,21 +776,21 @@ void main(void)
         if (UARTPrint == 1 ) {
             //ZHX ex1 print IMU values
             //serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
-            //			serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
-            //			serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
+            //          serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
+            //          serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
             //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
             //ZHx ex1 print two wheel angle measurements
             //serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
-            serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
+            //serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
 
             // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
 
             // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
-
-            //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
-
+            //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f, accelerometer z: %.3f, gyro x: %.3f\r\n",yk2,yk1,accelz,gyrox);
+            serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
+            serial_printf(&SerialA,"tilt value %.3f gyro value: %.3f\r\n",tilt_value, gyro_value);
             UARTPrint = 0;
         }
     }
@@ -773,6 +823,20 @@ __interrupt void ADCA_ISR (void) {
     }
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+
+    GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    SpibRegs.SPIFFRX.bit.RXFFIL = 8;
+    SpibRegs.SPITXBUF = 0xBA00;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+    SpibRegs.SPITXBUF = 0x0000;
+
+
+
 }
 // SWI_isr,  Using this interrupt as a Software started interrupt
 __interrupt void SWI_isr(void) {
@@ -784,7 +848,24 @@ __interrupt void SWI_isr(void) {
     EINT;                                 // Clear INTM to enable interrupts
 
 
+    vel_Right=0.6*vel_Right_1+100*(RightWheel-RightWheelPrev);
+    vel_Left=0.6*vel_Left_1+100*(LeftWheel-LeftWheelPrev);
+    RightWheelPrev=RightWheel;
+    LeftWheelPrev=LeftWheel;
+    vel_Right_1=vel_Right;
+    vel_Left_1=vel_Left;
 
+    gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
+    gyrorate_dot_1=gyrorate_dot;
+    gyro_value_1=gyro_value;
+
+    ubal= -K_1*tilt_value-K_2*gyro_value - K_3*(vel_Left+vel_Right)/2.0-K_4*gyrorate_dot;
+
+    uLeft=ubal/2;
+    uRight=ubal/2;
+
+    setEPWM2A(uRight);
+    setEPWM2B(-uLeft);
     // Insert SWI ISR Code here.......
 
 
@@ -823,21 +904,21 @@ __interrupt void cpu_timer0_isr(void)
     //    SpibRegs.SPITXBUF = 0xDA;
     //    SpibRegs.SPITXBUF = 500; // PWM value
     //    SpibRegs.SPITXBUF = 2200; // PWM Value
-    GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
-    SpibRegs.SPIFFRX.bit.RXFFIL = 8;
-    SpibRegs.SPITXBUF = 0xBA00;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
-    SpibRegs.SPITXBUF = 0x0000;
+    //    GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    //    SpibRegs.SPIFFRX.bit.RXFFIL = 8;
+    //    SpibRegs.SPITXBUF = 0xBA00;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
+    //    SpibRegs.SPITXBUF = 0x0000;
 
 
     if ((numTimer0calls%50) == 0) {
         // Blink LaunchPad Red LED
-        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
+        //        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
     }
 
 
@@ -857,151 +938,151 @@ __interrupt void cpu_timer2_isr(void)
 {
     numTimer2calls++;
     // Blink LaunchPad Blue LED
-    GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-    //ZHX ex1 call two read function and assign return values be LeftWheel and RightWheel, unit is rad.
-    LeftWheel=readEncLeft();
-    RightWheel=readEncRight();
-    //ZHX ex1 robot move forwad 0.5m andwe got the radian value, following two float variables stores the distace of two wheels
-    distanceL=LeftWheel/16.5;
-    distanceR=RightWheel/16.5;
-    //ZHX ex2 following two variables are the current position of each wheel.
-    PosLeft_K=LeftWheel/16.5;
-    PosRight_K=RightWheel/16.5;
-    //ZHX ex2 following two variables are the raw velocity with some noise, unit is rad/s
-    VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
-    VRightK=(PosRight_K-PosRight_K_1)/0.004;
-
-
-// right wall following
-
-//ZHX ex7 right wall following
-//    if (measure_status_1 == 0) {
-//        distright = dis_1;
-//    } else {
-//        distright = 1400;  // set to max reading if error
-//    }
-//    if (measure_status_3 == 0) {
-//        distfront = dis_3;
-//    } else {
-//        distfront = 1400;  // set to max reading if error
-//    }
-//
-//    if (right_wall_follow==1){
-
-//        turn=Kp_right*(ref_right-distright);
-//        Vref=Vel_right;
-//        if (distfront<threshold_1){
-//            right_wall_follow=0;
-//        }
-//    }
-//    else{
-//        turn=Kp_front*(ref_front-distfront);
-//        Vref=Vel_front;
-//        if (distfront>threshold_2){
-//            right_wall_follow=1;
-//        }
-//    }
-
-    // EX8
-    Vref=-yk2/6+0.5;
-    turn=-0.181*yk1+0.293;
-
-//        turn=Kp_right*(ref_right-distright);//ZHX ex7 right wall following controller
-//        Vref=Vel_right;
-//        if (distfront<threshold_1){  // close to front wall
-//            right_wall_follow=0; // activate left turn
-//        }
-//    }
-//    else{
-//        turn=Kp_front*(ref_front-distfront); // left turn controller
-//        Vref=Vel_front;
-//        if (distfront>threshold_2){ // front wall is far away
-//            right_wall_follow=1; // resume right wall following
-//        }
-//    }
-
-    // ZHX EX8
-    Vref=-yk2/6+0.5; // convert x voltage to Vref (0-0.5)
-    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25 - 0.293
-
-    eturn=turn+(VLeftK-VRightK);
-    //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
-    PosLeft_K_1=PosLeft_K;
-    PosRight_K_1=PosRight_K;
-
-    //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
-
-    ek_L=Vref-VLeftK-Kturn*eturn;
-
-    ek_L=Vref-VLeftK-Kturn*eturn; //ZHX ex4 implement a steering controller. turn setpoint controls the amount by which motor's speed exceed the other motor's speed.
-
-    //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
-    uLeft=Kp*ek_L+Ki*Ik_L;
-    ek_1_L=ek_L;
-
-
-    //ek_R=Vref-VRightK;
-    ek_R=Vref-VRightK+Kturn*eturn;
-    //Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
-    uRight=Kp*ek_R+Ki*Ik_R;
-    ek_1_R=ek_R;
-
-
-    // ZHX ex3 To prevent integral wind-up,we implement an anti-windup controller,in other words stop integrating when the control effort is saturated with the limit of 10 and -10。
-    if (uLeft>=10){
-        uLeft=10;
-        // ZHX ex3 set Ik equal to previous Ik*0.95
-        Ik_L=Ik_1_L*0.95;
-    }
-    else if (uLeft<=-10){
-        uLeft=-10;
-        Ik_L=Ik_1_L*0.95;
-    }
-    else{
-        Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
-        Ik_1_L=Ik_L;
-    }
-
-    if (uRight>=10){
-        uRight=10;
-        Ik_R=Ik_1_R*0.95;
-    }
-    else if (uRight<=-10){
-        uRight=-10;
-        Ik_R=Ik_1_R*0.95;
-    }
-    else{
-        Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
-        Ik_1_R=Ik_R;
-    }
-
-    setEPWM2A(uRight);
-    setEPWM2B(-uLeft);
-
-    CpuTimer2.InterruptCount++;
-
-    if ((CpuTimer2.InterruptCount % 10) == 0) {
-        //		UARTPrint = 1;
-    }
-
-//ZHX EX6 calculation the new pose of the robot car
-
-    theta_l=LeftWheel;
-    theta_r=RightWheel;
-    bearing=R_Wh/W_R*(theta_r-theta_l);
-    theta_ave=0.5*(theta_r+theta_l);
-    theta_ave_dot=0.5*(theta_r - theta_r_prev + theta_l - theta_l_prev)/0.004;
-    theta_r_prev=theta_r;
-    theta_l_prev=theta_l;
-    x_dot=R_Wh*theta_ave_dot*cos(bearing);
-    y_dot=R_Wh*theta_ave_dot*sin(bearing);
-
-  //ZHX ex6 Using trapezoidal rule
-
-    x=x+0.5*0.004*(x_dot+x_dot_prev);
-    y=y+0.5*0.004*(y_dot+y_dot_prev);
-    x_dot_prev=x_dot;
-    y_dot_prev=y_dot;
+    //    GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
+    //    //ZHX ex1 call two read function and assign return values be LeftWheel and RightWheel, unit is rad.
+    ////    LeftWheel=readEncLeft();
+    ////    RightWheel=readEncRight();
+    //    //ZHX ex1 robot move forwad 0.5m andwe got the radian value, following two float variables stores the distace of two wheels
+    //    distanceL=LeftWheel/16.5;
+    //    distanceR=RightWheel/16.5;
+    //    //ZHX ex2 following two variables are the current position of each wheel.
+    //    PosLeft_K=LeftWheel/16.5;
+    //    PosRight_K=RightWheel/16.5;
+    //    //ZHX ex2 following two variables are the raw velocity with some noise, unit is rad/s
+    //    VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
+    //    VRightK=(PosRight_K-PosRight_K_1)/0.004;
+    //
+    //
+    //// right wall following
+    //
+    ////ZHX ex7 right wall following
+    ////    if (measure_status_1 == 0) {
+    ////        distright = dis_1;
+    ////    } else {
+    ////        distright = 1400;  // set to max reading if error
+    ////    }
+    ////    if (measure_status_3 == 0) {
+    ////        distfront = dis_3;
+    ////    } else {
+    ////        distfront = 1400;  // set to max reading if error
+    ////    }
+    ////
+    ////    if (right_wall_follow==1){
+    //
+    ////        turn=Kp_right*(ref_right-distright);
+    ////        Vref=vel_Right;
+    ////        if (distfront<threshold_1){
+    ////            right_wall_follow=0;
+    ////        }
+    ////    }
+    ////    else{
+    ////        turn=Kp_front*(ref_front-distfront);
+    ////        Vref=Vel_front;
+    ////        if (distfront>threshold_2){
+    ////            right_wall_follow=1;
+    ////        }
+    ////    }
+    //
+    //    // EX8
+    //    Vref=-yk2/6+0.5;
+    //    turn=-0.181*yk1+0.293;
+    //
+    ////        turn=Kp_right*(ref_right-distright);//ZHX ex7 right wall following controller
+    ////        Vref=vel_Right;
+    ////        if (distfront<threshold_1){  // close to front wall
+    ////            right_wall_follow=0; // activate left turn
+    ////        }
+    ////    }
+    ////    else{
+    ////        turn=Kp_front*(ref_front-distfront); // left turn controller
+    ////        Vref=Vel_front;
+    ////        if (distfront>threshold_2){ // front wall is far away
+    ////            right_wall_follow=1; // resume right wall following
+    ////        }
+    ////    }
+    //
+    //    // ZHX EX8
+    //    Vref=-yk2/6+0.5; // convert x voltage to Vref (0-0.5)
+    //    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25 - 0.293
+    //
+    //    eturn=turn+(VLeftK-VRightK);
+    //    //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
+    //    PosLeft_K_1=PosLeft_K;
+    //    PosRight_K_1=PosRight_K;
+    //
+    //    //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
+    //
+    //    ek_L=Vref-VLeftK-Kturn*eturn;
+    //
+    //    ek_L=Vref-VLeftK-Kturn*eturn; //ZHX ex4 implement a steering controller. turn setpoint controls the amount by which motor's speed exceed the other motor's speed.
+    //
+    //    //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
+    //    uLeft=Kp*ek_L+Ki*Ik_L;
+    //    ek_1_L=ek_L;
+    //
+    //
+    //    //ek_R=Vref-VRightK;
+    //    ek_R=Vref-VRightK+Kturn*eturn;
+    //    //Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
+    ////    uRight=Kp*ek_R+Ki*Ik_R;
+    //    ek_1_R=ek_R;
+    //
+    //
+    //    // ZHX ex3 To prevent integral wind-up,we implement an anti-windup controller,in other words stop integrating when the control effort is saturated with the limit of 10 and -10。
+    //    if (uLeft>=10){
+    //        uLeft=10;
+    //        // ZHX ex3 set Ik equal to previous Ik*0.95
+    //        Ik_L=Ik_1_L*0.95;
+    //    }
+    //    else if (uLeft<=-10){
+    //        uLeft=-10;
+    //        Ik_L=Ik_1_L*0.95;
+    //    }
+    //    else{
+    //        Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
+    //        Ik_1_L=Ik_L;
+    //    }
+    //
+    //    if (uRight>=10){
+    //        uRight=10;
+    //        Ik_R=Ik_1_R*0.95;
+    //    }
+    //    else if (uRight<=-10){
+    //        uRight=-10;
+    //        Ik_R=Ik_1_R*0.95;
+    //    }
+    //    else{
+    //        Ik_R=Ik_1_R+0.004*(ek_R+ek_1_R)/2.0;
+    //        Ik_1_R=Ik_R;
+    //    }
+    //
+    ////    setEPWM2A(uRight);
+    ////    setEPWM2B(-uLeft);
+    //
+    //    CpuTimer2.InterruptCount++;
+    //
+    //    if ((CpuTimer2.InterruptCount % 10) == 0) {
+    //        //      UARTPrint = 1;
+    //    }
+    //
+    ////ZHX EX6 calculation the new pose of the robot car
+    //
+    //    theta_l=LeftWheel;
+    //    theta_r=RightWheel;
+    //    bearing=R_Wh/W_R*(theta_r-theta_l);
+    //    theta_ave=0.5*(theta_r+theta_l);
+    //    theta_ave_dot=0.5*(theta_r - theta_r_prev + theta_l - theta_l_prev)/0.004;
+    //    theta_r_prev=theta_r;
+    //    theta_l_prev=theta_l;
+    //    x_dot=R_Wh*theta_ave_dot*cos(bearing);
+    //    y_dot=R_Wh*theta_ave_dot*sin(bearing);
+    //
+    //  //ZHX ex6 Using trapezoidal rule
+    //
+    //    x=x+0.5*0.004*(x_dot+x_dot_prev);
+    //    y=y+0.5*0.004*(y_dot+y_dot_prev);
+    //    x_dot_prev=x_dot;
+    //    y_dot_prev=y_dot;
 
     if (NewLVData == 1) {
         NewLVData = 0;
@@ -1010,7 +1091,7 @@ __interrupt void cpu_timer2_isr(void)
 
         //        Vref = fromLVvalues[0];
 
-      // ZHX ex6 first 2 values send from labview is Vref and turn
+        // ZHX ex6 first 2 values send from labview is Vref and turn
         //Vref = fromLVvalues[0];
 
         //turn = fromLVvalues[1];
@@ -1024,7 +1105,7 @@ __interrupt void cpu_timer2_isr(void)
 
     if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
 
-      // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
+        // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
 
         DataToLabView.floatData[0] = x;
         DataToLabView.floatData[1] = y;
@@ -1303,6 +1384,90 @@ __interrupt void SPIB_isr(void) {
     gyroy = gyroy_raw*(250.0/32767.0);
     gyroz = gyroz_raw*(250.0/32767.0);
 
+    //Code to be copied into SPIB_ISR interrupt function after the IMU measurements have been collected.
+    if(calibration_state == 0){
+        calibration_count++;
+        if (calibration_count == 2000) {
+            calibration_state = 1;
+            calibration_count = 0;
+        }
+    } else if(calibration_state == 1) {
+        accelx_offset+=accelx;
+        accely_offset+=accely;
+        accelz_offset+=accelz;
+        gyrox_offset+=gyrox;
+        gyroy_offset+=gyroy;
+        gyroz_offset+=gyroz;
+        calibration_count++;
+        if (calibration_count == 2000) {
+            calibration_state = 2;
+            accelx_offset/=2000.0;
+            accely_offset/=2000.0;
+            accelz_offset/=2000.0;
+            gyrox_offset/=2000.0;
+            gyroy_offset/=2000.0;
+            gyroz_offset/=2000.0;
+            calibration_count = 0;
+            doneCal = 1;
+        }
+    } else if(calibration_state == 2) {
+        accelx -=(accelx_offset);
+        accely -=(accely_offset);
+        accelz -=(accelz_offset-accelzBalancePoint);
+        gyrox -= gyrox_offset;
+        gyroy -= gyroy_offset;
+        gyroz -= gyroz_offset;
+
+        /*--------------Kalman Filtering code start---------------------------------------------------------------------*/
+        float tiltrate = (gyrox*PI)/180.0; // rad/s
+        float pred_tilt, z, y, S;
+
+        // Prediction Step
+        pred_tilt = kalman_tilt + T*tiltrate;
+        pred_P = kalman_P + Q;
+
+        // Update Step
+        z = -accelz; // Note the negative here due to the polarity of AccelZ
+        y = z - pred_tilt;
+        S = pred_P + R;
+        kalman_K = pred_P/S;
+        kalman_tilt = pred_tilt + kalman_K*y;
+        kalman_P = (1 - kalman_K)*pred_P;
+
+        SpibNumCalls++;
+        // Kalman Filter used
+        tilt_array[SpibNumCalls] = kalman_tilt;
+        gyro_array[SpibNumCalls] = tiltrate;
+        LeftWheelArray[SpibNumCalls] = readEncLeft();
+        RightWheelArray[SpibNumCalls] = readEncRight();
+
+        if (SpibNumCalls >= 3) { // should never be greater than 3
+            tilt_value = (tilt_array[0] + tilt_array[1] + tilt_array[2] + tilt_array[3])/4.0;
+            gyro_value = (gyro_array[0] + gyro_array[1] + gyro_array[2] + gyro_array[3])/4.0;
+            LeftWheel=(LeftWheelArray[0]+LeftWheelArray[1]+LeftWheelArray[2]+LeftWheelArray[3])/4.0;
+            RightWheel=(RightWheelArray[0]+RightWheelArray[1]+RightWheelArray[2]+RightWheelArray[3])/4.0;
+            SpibNumCalls = -1;
+
+            PieCtrlRegs.PIEIFR12.bit.INTx9 = 1; // Manually cause the interrupt for the SWI
+        }
+    }
+
+        timecount++;
+
+        if((timecount%200) == 0) {
+            if(doneCal == 0) {
+                GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1; // Blink Blue LED while calibrating
+            }
+            GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Always Block Red LED
+            UARTPrint = 1; // Tell While loop to print
+        }
+
+    SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1; // Clear Overflow flag
+    SpibRegs.SPIFFRX.bit.RXFFINTCLR=1; // Clear Interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP6;
+    //JLS: End of copied code from end of lab 7, exercise 2
+
+
     if ((SpibNumCalls % 200) == 0) {
         UARTPrint = 1;
     }
@@ -1311,6 +1476,13 @@ __interrupt void SPIB_isr(void) {
     SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1;  // Clear Overflow flag
     SpibRegs.SPIFFRX.bit.RXFFINTCLR=1;  // Clear Interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP6;
+
+    LeftWheel=readEncLeft();
+    RightWheel=readEncRight();
+
+    //    setEPWM2A(uRight);
+    //    setEPWM2B(-uLeft);
+
 
 }
 
@@ -1565,7 +1737,7 @@ float readEncLeft(void) {
     // 100 slits in the encoder disk so 100 square waves per one revolution of the
     // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
     // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-    //ZHX EX1 Converts the eQEP counts to number of radian the wheel.400 counts oer revolution and gear ratio is 30:1. 400*30=12000 
+    //ZHX EX1 Converts the eQEP counts to number of radian the wheel.400 counts oer revolution and gear ratio is 30:1. 400*30=12000
     //ZHX ex1 when manually rotate the wheel, left wheel in tera term gives the negative value. we negate the multiplication factor to read a positive angle
     return (-raw*(2*PI)/12000.0);
 
