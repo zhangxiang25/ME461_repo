@@ -38,7 +38,6 @@
 #define RX_MSG_OBJ_ID_4       4  //quality from sensor 2
 // ----- code for CAN end here -----
 
-
 // Interrupt Service Routines predefinition
 __interrupt void cpu_timer0_isr(void);
 __interrupt void cpu_timer1_isr(void);
@@ -60,11 +59,7 @@ void setEPWM2B(float controleffort);
 
 // Count variables
 uint32_t numTimer0calls = 0;
-
-
 uint32_t numTimer2calls = 0;
-
-
 uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
@@ -148,9 +143,7 @@ float ek_1_R=0.0;
 float Ik_R=0.0;
 float Ik_1_R=0.0;
 
-
 //ZHX ex6 define variables
-
 float R_Wh=0.0593;
 float W_R=0.173;
 float theta_l=0.0;
@@ -165,7 +158,6 @@ float x_dot_prev=0.0;
 float y_dot_prev=0.0;
 
 //ZHX ex7 define variables
-
 float Kp_right=0.001;
 float Kp_front=0.0002;
 float ref_right=200;
@@ -196,9 +188,7 @@ extern float LinuxCommands[CMDNUM_FROM_FLOATS];
 
 
 //LAB4
-
 //ZHX ex8 paste from LAB4
-
 float yk1=0;
 float yk2=0;
 float xk_1[22] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0} ;
@@ -208,12 +198,10 @@ interrupt void ADCA_ISR (void);
 
 int16_t adca0result=0;
 int16_t adca1result=0;
-
 int32_t ADCA1_COUNT=0;
 
 //Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
 // ZHX we type b=fir1(22,75/500) in the matlab
-
 float b[22]={   -2.3890045153263611e-03,
                 -3.3150057635348224e-03,
                 -4.6136191242627002e-03,
@@ -486,9 +474,7 @@ void main(void)
 
 
     //LAB4
-
     //ZHX ex8 paste from LAB4 using EPWM5 to trigger ADCA channel
-
     EALLOW;
     // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
     EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
@@ -541,7 +527,6 @@ void main(void)
     EALLOW;
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-
     AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
     //Set pulse positions to late
     AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
@@ -586,11 +571,8 @@ void main(void)
     // Enable CANB in the PIE: Group 9 interrupt 7
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
 
-    //LAB4
-
     //ZHX ex8 paste from LAB4
     //ZHX enable PE interrupt 1.1(ADCA1)
-
     PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // ----- code for CAN end here -----
 
@@ -730,10 +712,7 @@ void main(void)
             //serial_printf(&SerialA,"LeftWheel dis: %.3f RightWheel dis: %.3f\r\n",distanceL,distanceR);
             serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
-
-            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
             // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
-
             //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
 
             UARTPrint = 0;
@@ -742,7 +721,6 @@ void main(void)
 }
 
 //ZHX ex8 paste from lab4
-
 __interrupt void ADCA_ISR (void) {
     adca0result = AdcaResultRegs.ADCRESULT0;
     adca1result = AdcaResultRegs.ADCRESULT1;
@@ -808,7 +786,6 @@ __interrupt void cpu_timer0_isr(void)
         }
     }
 
-
     //Clear GPIO9 Low to act as a Slave Select. Right now, just to scope. Later to select DAN28027 chip
     //GpioDataRegs.GPACLEAR.bit.GPIO9 = 1;
     //    SpibRegs.SPIFFRX.bit.RXFFIL = 2; // Issue the SPIB_RX_INT when two values are in the RX FIFO
@@ -866,9 +843,6 @@ __interrupt void cpu_timer2_isr(void)
     VLeftK=(PosLeft_K-PosLeft_K_1)/0.004;
     VRightK=(PosRight_K-PosRight_K_1)/0.004;
 
-
-// right wall following
-
 //ZHX ex7 right wall following
 //    if (measure_status_1 == 0) {
 //        distright = dis_1;
@@ -897,8 +871,8 @@ __interrupt void cpu_timer2_isr(void)
 //    }
 
     // ZHX EX8
-    Vref=-yk2/6+0.5; // convert x voltage to Vref (0-0.5)
-    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25 - 0.293
+    Vref=-yk2/6+0.5; // convert x voltage to Vref (0, 0.5)
+    turn=-0.181*yk1+0.293; // convert y voltage to turn (-0.25, -0.293)
 
     eturn=turn+(VLeftK-VRightK);
     //ZHX ex2 the previous variables are intialized to 0 at the top of code, and we saving all the previous value to be the current values
