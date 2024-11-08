@@ -209,7 +209,6 @@ interrupt void ADCA_ISR (void);
 int16_t adca0result=0;
 int16_t adca1result=0;
 
-
 int32_t ADCA1_COUNT=0;
 
 //Here we are doing 21st-order low pass FIR filter with 75Hz cutoff frequency whatever.
@@ -407,8 +406,6 @@ void main(void)
     GPIO_SetupPinOptions(12, GPIO_OUTPUT, GPIO_PUSHPULL);
     // ----- code for CAN end here -----
 
-
-
     // ----- code for CAN start here -----
     // Initialize the CAN controller
     InitCANB();
@@ -590,7 +587,6 @@ void main(void)
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
 
     //LAB4
-    //ZHX EX3 enable PE interrupt 1.1
 
     //ZHX ex8 paste from LAB4
     //ZHX enable PE interrupt 1.1(ADCA1)
@@ -736,7 +732,6 @@ void main(void)
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
 
             // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
-
             // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
 
             //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f\r\n",Vref,turn,yk2,yk1);
@@ -887,25 +882,6 @@ __interrupt void cpu_timer2_isr(void)
 //    }
 //
 //    if (right_wall_follow==1){
-
-//        turn=Kp_right*(ref_right-distright);
-//        Vref=Vel_right;
-//        if (distfront<threshold_1){
-//            right_wall_follow=0;
-//        }
-//    }
-//    else{
-//        turn=Kp_front*(ref_front-distfront);
-//        Vref=Vel_front;
-//        if (distfront>threshold_2){
-//            right_wall_follow=1;
-//        }
-//    }
-
-    // EX8
-    Vref=-yk2/6+0.5;
-    turn=-0.181*yk1+0.293;
-
 //        turn=Kp_right*(ref_right-distright);//ZHX ex7 right wall following controller
 //        Vref=Vel_right;
 //        if (distfront<threshold_1){  // close to front wall
@@ -931,14 +907,11 @@ __interrupt void cpu_timer2_isr(void)
 
     //ek_L=Vref-VLeftK; ZHX ex3 from decoupled PI controller ek=Vref-vk
 
-    ek_L=Vref-VLeftK-Kturn*eturn;
-
     ek_L=Vref-VLeftK-Kturn*eturn; //ZHX ex4 implement a steering controller. turn setpoint controls the amount by which motor's speed exceed the other motor's speed.
 
     //Ik_L=Ik_1_L+0.004*(ek_L+ek_1_L)/2.0;
     uLeft=Kp*ek_L+Ki*Ik_L;
     ek_1_L=ek_L;
-
 
     //ek_R=Vref-VRightK;
     ek_R=Vref-VRightK+Kturn*eturn;
@@ -1007,8 +980,6 @@ __interrupt void cpu_timer2_isr(void)
         NewLVData = 0;
         float dummy = 0.0;
         dummy = fromLVvalues[0];
-
-        //        Vref = fromLVvalues[0];
 
       // ZHX ex6 first 2 values send from labview is Vref and turn
         //Vref = fromLVvalues[0];
