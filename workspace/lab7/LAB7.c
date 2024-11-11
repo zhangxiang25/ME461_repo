@@ -848,12 +848,12 @@ __interrupt void SWI_isr(void) {
     EINT;                                 // Clear INTM to enable interrupts
 
 
-    vel_Right=0.6*vel_Right_1+100*(RightWheel-RightWheelPrev);
-    vel_Left=0.6*vel_Left_1+100*(LeftWheel-LeftWheelPrev);
-    RightWheelPrev=RightWheel;
-    LeftWheelPrev=LeftWheel;
-    vel_Right_1=vel_Right;
-    vel_Left_1=vel_Left;
+    vel_Right = 0.6*vel_Right_1 + 100*(RightWheel - RightWheelPrev);
+    vel_Left = 0.6*vel_Left_1 + 100*(LeftWheel - LeftWheelPrev);
+    RightWheelPrev = RightWheel;
+    LeftWheelPrev = LeftWheel;
+    vel_Right_1 = vel_Right;
+    vel_Left_1 = vel_Left;
 
     gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
     gyrorate_dot_1=gyrorate_dot;
@@ -1468,20 +1468,7 @@ __interrupt void SPIB_isr(void) {
     //JLS: End of copied code from end of lab 7, exercise 2
 
 
-    if ((SpibNumCalls % 200) == 0) {
-        UARTPrint = 1;
-    }
-    SpibNumCalls++;
 
-    SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1;  // Clear Overflow flag
-    SpibRegs.SPIFFRX.bit.RXFFINTCLR=1;  // Clear Interrupt flag
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP6;
-
-    LeftWheel=readEncLeft();
-    RightWheel=readEncRight();
-
-    //    setEPWM2A(uRight);
-    //    setEPWM2B(-uLeft);
 
 
 }
