@@ -76,6 +76,33 @@ int16_t gyrox_raw = 0;
 int16_t gyroy_raw = 0;
 int16_t gyroz_raw = 0;
 
+//JLS: Lab 7, exercise 5 -- initialize ForwardBackwardCommand for uRight & uLeft calculation
+float ForwardBackwardCommand = 0;
+float eSpeed = 0; //JLS: speed error
+float eSpeed_1 = 0;
+
+//JLS: speed gains for lab 7, exercise 5
+float KpSpeed = 0.35;
+float KiSpeed = 1.5;
+float IK_eSpeed = 0;
+float IK_eSpeed_1=0;
+
+//JLS: difference between the left wheel's angle in radians & the right wheel's angle in radians
+float WhlDiff = 0;
+float WhlDiff_1 = 0; //JLS: old WhlDiff value
+float vel_WhlDiff = 0; //JLS: velocity & old velocity (83)
+float vel_WhlDiff_1 = 0;
+
+float turnref = 0; //JLS: labeled as "turn angle" in the block diagram
+float turnref_1 = 0; //EEC: Saved value of turnref for the previous increment
+
+//JLS: turnref is not directly the angle the robot will turn to!
+float errorDiff = 0; //JLS: errorDiff = turnref  - WhlDiff; integrated using trapezoidal rule
+float errorDiff_1 = 0; // ZSK: this will be used to integrate using trapezoidal rule
+float intDiff = 0; // ZSK: stores our trapezoidal integration
+float intDiff_1 = 0; // ZSK: we will use this to protect against integral windup
+float WhlSpeedAvg = 0; //JLS: wheel speed average
+
 float accelx = 0;
 float accely = 0;
 float accelz = 0;
@@ -131,8 +158,8 @@ float PosRight_K_1=0.0;
 float VLeftK=0.0;
 float VRightK=0.0;
 
-float Kp=3;
-float Ki=25;
+//float Kp=3;
+//float Ki=25;
 float Kturn=3;
 float eturn=0.0;
 float turn=0.0;
@@ -288,6 +315,15 @@ float K_1=-60;
 float K_2=-4.5;
 float K_3=-1.1;
 float K_4=-0.1;
+
+float Kp=3.0;
+float Ki=20.0;
+float Kd=0.08;
+
+float turnrate = 0.0;
+float turnrate_1 = 0.0;
+
+float Segbot_refSpeed=0.0
 
 void main(void)
 {
@@ -850,28 +886,81 @@ __interrupt void SWI_isr(void) {
 
     vel_Right = 0.6*vel_Right_1 + 100*(RightWheel - RightWheelPrev);
     vel_Left = 0.6*vel_Left_1 + 100*(LeftWheel - LeftWheelPrev);
+
+    gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
+
+    ubal= -K_1*tilt_value-K_2*gyro_value - K_3*(vel_Left+vel_Right)/2.0-K_4*gyrorate_dot;
+
+    //    uLeft=ubal/2;
+    //    uRight=ubal/2;
+    //JLS: variables for Lab 7, exercise 4
+    turnref = turnref_1 + 0.5*0.004*(turnrate+turnrate_1);//EEC Calculate turnref using turnrate and Euler integration
+    WhlDiff = LeftWheel-RightWheel;
+    //EEC: calculates the wheel difference using discrete time filter
+    vel_WhlDiff = 0.333*vel_WhlDiff_1 + 166.667*( WhlDiff - WhlDiff_1 );
+    errorDiff = turnref - WhlDiff; // ZSK: error between the read angle and the input turning angle
+    intDiff = intDiff_1 + 0.004 * (errorDiff + errorDiff_1)/2;
+    turn = Kp*errorDiff + Ki*intDiff - Kd*vel_WhlDiff; // ZSK: calculate the PID control to give the turn command
+
+    if(fabs(turn)>3){ // ZSK: if statement used to protect from integral windup
+        intDiff = intDiff_1;
+    }
+
+    if (turn>4){
+        turn=4;
+    }
+    if (turn<-4){
+        turn=-4;
+    }
+
+//    uRight = ubal/2.0 - turn;
+//    uLeft = ubal/2.0 + turn;
+
+    //JLS:calculate average wheel velocity WhlSpeedAvg & error speed eSpeed
+    WhlSpeedAvg = ( vel_Left + vel_Right ) / 2.0;
+    eSpeed = ( Segbot_refSpeed  - WhlSpeedAvg );
+    IK_eSpeed = IK_eSpeed_1 + 0.004*(eSpeed + eSpeed_1)/2;
+    ForwardBackwardCommand = KpSpeed*eSpeed + KiSpeed*IK_eSpeed;
+
+    if(fabs(ForwardBackwardCommand) > 3){
+        IK_eSpeed=IK_eSpeed_1
+    }
+    if (ForwardBackwardCommand>4){
+        ForwardBackwardCommand=4;
+    }
+    if (ForwardBackwardCommand<-4){
+        ForwardBackwardCommand=-4;
+    }
+
+    uRight = ubal/2.0 – turn - ForwardBackwardCommand;
+    uLeft = ubal/2.0 + turn - ForwardBackwardCommand;
+
+
+    setEPWM2A(uRight);
+    setEPWM2B(-uLeft);
+
+    // Saving old variables
     RightWheelPrev = RightWheel;
     LeftWheelPrev = LeftWheel;
     vel_Right_1 = vel_Right;
     vel_Left_1 = vel_Left;
+    gyro_value_1 = gyro_value;
+    gyrorate_dot_1 = gyrorate_dot;
 
-    gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
-    gyrorate_dot_1=gyrorate_dot;
-    gyro_value_1=gyro_value;
+    vel_WhlDiff_1 = vel_WhlDiff; //EEC: wheel difference for the previous increment
+    WhlDiff_1 = WhlDiff;
+    errorDiff_1 = errorDiff; // ZSK: set the past variable before computing the new one
+    intDiff_1 = intDiff;
 
-    ubal= -K_1*tilt_value-K_2*gyro_value - K_3*(vel_Left+vel_Right)/2.0-K_4*gyrorate_dot;
+    turnref_1 = turnref;
+    turnrate_1 = turnrate;
 
-    uLeft=ubal/2;
-    uRight=ubal/2;
-
-    setEPWM2A(uRight);
-    setEPWM2B(-uLeft);
-    // Insert SWI ISR Code here.......
-
+    IK_eSpeed_1 = IK_eSpeed;
+    eSpeed_1 = eSpeed;
 
     numSWIcalls++;
-
     DINT;
+
 
 }
 
@@ -1365,6 +1454,8 @@ void setupSpib(void) //Call this function in main() somewhere after the DINT; li
 int16_t spivalue1 = 0;
 int16_t spivalue2 = 0;
 int16_t spivalue3 = 0;
+
+//JLS: SPIB_ISR; contains critical data for locomotion / balancing
 __interrupt void SPIB_isr(void) {
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     spivalue1 = SpibRegs.SPIRXBUF;
@@ -1448,27 +1539,28 @@ __interrupt void SPIB_isr(void) {
             RightWheel=(RightWheelArray[0]+RightWheelArray[1]+RightWheelArray[2]+RightWheelArray[3])/4.0;
             SpibNumCalls = -1;
 
+
             PieCtrlRegs.PIEIFR12.bit.INTx9 = 1; // Manually cause the interrupt for the SWI
         }
+
     }
 
-        timecount++;
+    timecount++;
 
-        if((timecount%200) == 0) {
-            if(doneCal == 0) {
-                GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1; // Blink Blue LED while calibrating
-            }
-            GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Always Block Red LED
-            UARTPrint = 1; // Tell While loop to print
+    if((timecount%200) == 0) {
+        if(doneCal == 0) {
+            GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1; // Blink Blue LED while calibrating
         }
+        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Always Block Red LED
+        UARTPrint = 1; // Tell While loop to print
+    }
+
+
 
     SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1; // Clear Overflow flag
     SpibRegs.SPIFFRX.bit.RXFFINTCLR=1; // Clear Interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP6;
-    //JLS: End of copied code from end of lab 7, exercise 2
-
-
-
+    //JLS: End of copied code block from end of lab 7, exercise 2
 
 
 }
