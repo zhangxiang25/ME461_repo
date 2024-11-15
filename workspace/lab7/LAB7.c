@@ -222,9 +222,8 @@ extern uint16_t newLinuxCommands;
 extern float LinuxCommands[CMDNUM_FROM_FLOATS];
 
 
-//LAB4
 
-//ZHX ex8 paste from LAB4
+//ZHX ex1 paste from LAB4
 
 float yk1=0;
 float yk2=0;
@@ -265,9 +264,7 @@ float b[22]={   -2.3890045153263611e-03,
                 -3.3150057635348224e-03,
                 -2.3890045153263611e-03};
 
-
-//lab7
-// Needed global Variables
+// ZHX ex2 Needed global Variables
 float accelx_offset = 0;
 float accely_offset = 0;
 float accelz_offset = 0;
@@ -550,7 +547,7 @@ void main(void)
     PieVectTable.CANB0_INT = &can_isr;
 
 
-    //ZHX ex8 paste from lab4, tell processor to call defined function &ADCA_ISR
+    //ZHX ex1 paste from lab4, tell processor to call defined function &ADCA_ISR
 
     PieVectTable.ADCA1_INT= &ADCA_ISR;
     // ----- code for CAN end here -----
@@ -573,10 +570,7 @@ void main(void)
     CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
 
-
-    //LAB4
-
-    //ZHX ex8 paste from LAB4 using EPWM5 to trigger ADCA channel
+    //ZHX ex1 paste from LAB4 using EPWM5 to trigger ADCA channel
 
     EALLOW;
     // ZHX EX1.1 we use EPWM5 as a timer to trigger ADCD conversion sequence(sample ADCIND0 and ADCIND1)
@@ -625,8 +619,7 @@ void main(void)
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
 
-
-    //ZHX ex8 paste from lab4
+    //ZHX ex1 paste from lab4
     EALLOW;
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
     AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
@@ -651,7 +644,7 @@ void main(void)
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     EDIS;
-
+  //ZHX ex1.3 called setupSPIB in main()
     setupSpib();
     init_eQEPs();
 
@@ -678,9 +671,8 @@ void main(void)
     //LAB4
     //ZHX EX3 enable PE interrupt 1.1
 
-    //ZHX ex8 paste from LAB4
+    //ZHX ex1 paste from LAB4
     //ZHX enable PE interrupt 1.1(ADCA1)
-
     PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
     // ----- code for CAN end here -----
 
@@ -821,19 +813,17 @@ void main(void)
             //serial_printf(&SerialA,"Vref: %.3f turn: %.3f\r\n",Vref,turn);
             //serial_printf(&SerialA,"LeftWheel V: %.3f RightWheel V: %.3f\r\n",VLeftK,VRightK);
 
-            // ZHX EX3 Print the filtered value of both rotation potentiometers of the small joystick
-
-            // ZHX ex8 paste from lab4 Print the filtered value of both rotation potentiometers of the small joystick
+            // ZHX ex1.7 Print the filtered value of both rotation potentiometers of the small joystick, the accelerometer z value, the gyro x value and both motor angle
             //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f, accelerometer z: %.3f, gyro x: %.3f\r\n",yk2,yk1,accelz,gyrox);
             serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
+           // ZHX ex2 Print the 4-point averaged feedback signals
             serial_printf(&SerialA,"tilt value %.3f gyro value: %.3f\r\n",tilt_value, gyro_value);
             UARTPrint = 0;
         }
     }
 }
 
-//ZHX ex8 paste from lab4
-
+//ZHX ex1 paste from lab4
 __interrupt void ADCA_ISR (void) {
     adca0result = AdcaResultRegs.ADCRESULT0;
     adca1result = AdcaResultRegs.ADCRESULT1;
@@ -859,7 +849,7 @@ __interrupt void ADCA_ISR (void) {
     }
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-
+  //ZHX ex1.5 Spi transmission and reception of the three accelerometer reading and the 3 gyro readings
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
     SpibRegs.SPIFFRX.bit.RXFFIL = 8;
     SpibRegs.SPITXBUF = 0xBA00;
@@ -871,8 +861,6 @@ __interrupt void ADCA_ISR (void) {
     SpibRegs.SPITXBUF = 0x0000;
     SpibRegs.SPITXBUF = 0x0000;
 
-
-
 }
 // SWI_isr,  Using this interrupt as a Software started interrupt
 __interrupt void SWI_isr(void) {
@@ -882,7 +870,6 @@ __interrupt void SWI_isr(void) {
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
     asm("       NOP");                    // Wait one cycle
     EINT;                                 // Clear INTM to enable interrupts
-
 
     vel_Right = 0.6*vel_Right_1 + 100*(RightWheel - RightWheelPrev);
     vel_Left = 0.6*vel_Left_1 + 100*(LeftWheel - LeftWheelPrev);
@@ -981,7 +968,7 @@ __interrupt void SWI_isr(void) {
         Segbot_refSpeed = fromLVvalues[0];
 
         //Vref = fromLVvalues[0];
-
+      
         // ZHX ex6 first 2 values send from labview is Vref and turn
         //Vref = fromLVvalues[0];
 
@@ -1514,6 +1501,7 @@ int16_t spivalue3 = 0;
 
 //JLS: SPIB_ISR; contains critical data for locomotion / balancing
 __interrupt void SPIB_isr(void) {
+  //ZHX ex1.6 pull the MPU-9250's slave select high
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     spivalue1 = SpibRegs.SPIRXBUF;
     accelx_raw = SpibRegs.SPIRXBUF;
@@ -1533,6 +1521,7 @@ __interrupt void SPIB_isr(void) {
     gyroz = gyroz_raw*(250.0/32767.0);
 
     //Code to be copied into SPIB_ISR interrupt function after the IMU measurements have been collected.
+  // ZHX ex2 in the first 4 seconds, calculating the costant offsets of the three accelerometers and the three rate gyros
     if(calibration_state == 0){
         calibration_count++;
         if (calibration_count == 2000) {
@@ -1540,6 +1529,7 @@ __interrupt void SPIB_isr(void) {
             calibration_count = 0;
         }
     } else if(calibration_state == 1) {
+      // ZHX ex2 summing up each reading recieved
         accelx_offset+=accelx;
         accely_offset+=accely;
         accelz_offset+=accelz;
@@ -1548,6 +1538,7 @@ __interrupt void SPIB_isr(void) {
         gyroz_offset+=gyroz;
         calibration_count++;
         if (calibration_count == 2000) {
+          //ZHX ex2 divied the summed varible by 2000 to find the average offset over 2 second
             calibration_state = 2;
             accelx_offset/=2000.0;
             accely_offset/=2000.0;
@@ -1559,6 +1550,7 @@ __interrupt void SPIB_isr(void) {
             doneCal = 1;
         }
     } else if(calibration_state == 2) {
+      // ZHX after the 4 seconds, the offset calibration is complete
         accelx -=(accelx_offset);
         accely -=(accely_offset);
         accelz -=(accelz_offset-accelzBalancePoint);
@@ -1596,7 +1588,6 @@ __interrupt void SPIB_isr(void) {
             RightWheel=(RightWheelArray[0]+RightWheelArray[1]+RightWheelArray[2]+RightWheelArray[3])/4.0;
             SpibNumCalls = -1;
 
-
             PieCtrlRegs.PIEIFR12.bit.INTx9 = 1; // Manually cause the interrupt for the SWI
         }
 
@@ -1612,13 +1603,10 @@ __interrupt void SPIB_isr(void) {
         UARTPrint = 1; // Tell While loop to print
     }
 
-
-
     SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1; // Clear Overflow flag
     SpibRegs.SPIFFRX.bit.RXFFINTCLR=1; // Clear Interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP6;
     //JLS: End of copied code block from end of lab 7, exercise 2
-
 
 }
 
