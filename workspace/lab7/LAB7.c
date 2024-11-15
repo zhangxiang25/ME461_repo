@@ -323,7 +323,7 @@ float Kd=0.08;
 float turnrate = 0.0;
 float turnrate_1 = 0.0;
 
-float Segbot_refSpeed=0.0
+float Segbot_refSpeed=0.0;
 
 void main(void)
 {
@@ -913,8 +913,8 @@ __interrupt void SWI_isr(void) {
         turn=-4;
     }
 
-//    uRight = ubal/2.0 - turn;
-//    uLeft = ubal/2.0 + turn;
+    //    uRight = ubal/2.0 - turn;
+    //    uLeft = ubal/2.0 + turn;
 
     //JLS:calculate average wheel velocity WhlSpeedAvg & error speed eSpeed
     WhlSpeedAvg = ( vel_Left + vel_Right ) / 2.0;
@@ -923,7 +923,7 @@ __interrupt void SWI_isr(void) {
     ForwardBackwardCommand = KpSpeed*eSpeed + KiSpeed*IK_eSpeed;
 
     if(fabs(ForwardBackwardCommand) > 3){
-        IK_eSpeed=IK_eSpeed_1
+        IK_eSpeed=IK_eSpeed_1;
     }
     if (ForwardBackwardCommand>4){
         ForwardBackwardCommand=4;
@@ -932,7 +932,7 @@ __interrupt void SWI_isr(void) {
         ForwardBackwardCommand=-4;
     }
 
-    uRight = ubal/2.0 – turn - ForwardBackwardCommand;
+    uRight=ubal/2.0 - turn - ForwardBackwardCommand;
     uLeft = ubal/2.0 + turn - ForwardBackwardCommand;
 
 
@@ -958,10 +958,67 @@ __interrupt void SWI_isr(void) {
     IK_eSpeed_1 = IK_eSpeed;
     eSpeed_1 = eSpeed;
 
+    theta_l=LeftWheel;
+    theta_r=RightWheel;
+    bearing=R_Wh/W_R*(theta_r-theta_l);
+    theta_ave=0.5*(theta_r+theta_l);
+    theta_ave_dot=0.5*(theta_r - theta_r_prev + theta_l - theta_l_prev)/0.004;
+    theta_r_prev=theta_r;
+    theta_l_prev=theta_l;
+    x_dot=R_Wh*theta_ave_dot*cos(bearing);
+    y_dot=R_Wh*theta_ave_dot*sin(bearing);
+
+    //ZHX ex6 Using trapezoidal rule
+
+    x=x+0.5*0.004*(x_dot+x_dot_prev);
+    y=y+0.5*0.004*(y_dot+y_dot_prev);
+    x_dot_prev=x_dot;
+    y_dot_prev=y_dot;
+
+    if (NewLVData == 1) {
+        NewLVData = 0;
+        float dummy = 0.0;
+        Segbot_refSpeed = fromLVvalues[0];
+
+        //Vref = fromLVvalues[0];
+
+        // ZHX ex6 first 2 values send from labview is Vref and turn
+        //Vref = fromLVvalues[0];
+
+        turnrate = fromLVvalues[1];
+        printLV3 = fromLVvalues[2];
+        printLV4 = fromLVvalues[3];
+        printLV5 = fromLVvalues[4];
+        printLV6 = fromLVvalues[5];
+        printLV7 = fromLVvalues[6];
+        printLV8 = fromLVvalues[7];
+    }
+
+    if((numSWIcalls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+
+        // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
+
+        DataToLabView.floatData[0] = x;
+        DataToLabView.floatData[1] = y;
+        DataToLabView.floatData[2] = bearing;
+        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[5] = (float)numTimer0calls;
+        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
+        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
+        LVsenddata[0] = '*'; // header for LVdata
+        LVsenddata[1] = '$';
+        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
+            if (i%2==0) {
+                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
+            } else {
+                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
+            }
+        }
+        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
+    }
     numSWIcalls++;
     DINT;
-
-
 }
 
 // cpu_timer0_isr - CPU Timer0 ISR
@@ -1173,48 +1230,48 @@ __interrupt void cpu_timer2_isr(void)
     //    x_dot_prev=x_dot;
     //    y_dot_prev=y_dot;
 
-    if (NewLVData == 1) {
-        NewLVData = 0;
-        float dummy = 0.0;
-        dummy = fromLVvalues[0];
-
-        //        Vref = fromLVvalues[0];
-
-        // ZHX ex6 first 2 values send from labview is Vref and turn
-        //Vref = fromLVvalues[0];
-
-        //turn = fromLVvalues[1];
-        printLV3 = fromLVvalues[2];
-        printLV4 = fromLVvalues[3];
-        printLV5 = fromLVvalues[4];
-        printLV6 = fromLVvalues[5];
-        printLV7 = fromLVvalues[6];
-        printLV8 = fromLVvalues[7];
-    }
-
-    if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
-
-        // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
-
-        DataToLabView.floatData[0] = x;
-        DataToLabView.floatData[1] = y;
-        DataToLabView.floatData[2] = bearing;
-        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
-        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
-        DataToLabView.floatData[5] = (float)numTimer0calls;
-        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
-        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
-        LVsenddata[0] = '*'; // header for LVdata
-        LVsenddata[1] = '$';
-        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
-            if (i%2==0) {
-                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
-            } else {
-                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
-            }
-        }
-        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
-    }
+    //    if (NewLVData == 1) {
+    //        NewLVData = 0;
+    //        float dummy = 0.0;
+    //        dummy = fromLVvalues[0];
+    //
+    //        //        Vref = fromLVvalues[0];
+    //
+    //        // ZHX ex6 first 2 values send from labview is Vref and turn
+    //        //Vref = fromLVvalues[0];
+    //
+    //        //turn = fromLVvalues[1];
+    //        printLV3 = fromLVvalues[2];
+    //        printLV4 = fromLVvalues[3];
+    //        printLV5 = fromLVvalues[4];
+    //        printLV6 = fromLVvalues[5];
+    //        printLV7 = fromLVvalues[6];
+    //        printLV8 = fromLVvalues[7];
+    //    }
+    //
+    //    if((numTimer2calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+    //
+    //        // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
+    //
+    //        DataToLabView.floatData[0] = x;
+    //        DataToLabView.floatData[1] = y;
+    //        DataToLabView.floatData[2] = bearing;
+    //        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
+    //        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
+    //        DataToLabView.floatData[5] = (float)numTimer0calls;
+    //        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
+    //        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
+    //        LVsenddata[0] = '*'; // header for LVdata
+    //        LVsenddata[1] = '$';
+    //        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
+    //            if (i%2==0) {
+    //                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
+    //            } else {
+    //                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
+    //            }
+    //        }
+    //        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
+    //    }
 
 }
 
@@ -1819,7 +1876,6 @@ float readEncLeft(void) {
     //ZHX EX1 Converts the eQEP counts to number of radian the wheel.400 counts oer revolution and gear ratio is 30:1. 400*30=12000
     //ZHX ex1 when manually rotate the wheel, left wheel in tera term gives the negative value. we negate the multiplication factor to read a positive angle
     return (-raw*(2*PI)/12000.0);
-
 }
 
 float readEncRight(void) {
@@ -1833,7 +1889,7 @@ float readEncRight(void) {
     return (raw*(2*PI)/12000.0);
 
 }
-
+// ZHX EX1 intialization for EPWM2
 // ZHX EX2 following 2 functions are copied from Lab3 and they are going to saturate controleffort.If the value is greater thn 10, set it to 10;whe the value is lower than -10, set it to -10
 // ZHX EX2 this function set EPWM2A to a duty cycle value related to the passed controleffort value
 void setEPWM2A(float controleffort){
