@@ -644,7 +644,7 @@ void main(void)
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
     EDIS;
-  //ZHX ex1.3 called setupSPIB in main()
+    //ZHX ex1.3 called setupSPIB in main()
     setupSpib();
     init_eQEPs();
 
@@ -816,7 +816,7 @@ void main(void)
             // ZHX ex1.7 Print the filtered value of both rotation potentiometers of the small joystick, the accelerometer z value, the gyro x value and both motor angle
             //serial_printf(&SerialA,"x direction: %.3f, y direction: %.3f, accelerometer z: %.3f, gyro x: %.3f\r\n",yk2,yk1,accelz,gyrox);
             serial_printf(&SerialA,"LeftWheel: %.3f RightWheel: %.3f\r\n",LeftWheel,RightWheel);
-           // ZHX ex2 Print the 4-point averaged feedback signals
+            // ZHX ex2 Print the 4-point averaged feedback signals
             serial_printf(&SerialA,"tilt value %.3f gyro value: %.3f\r\n",tilt_value, gyro_value);
             UARTPrint = 0;
         }
@@ -849,7 +849,7 @@ __interrupt void ADCA_ISR (void) {
     }
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-  //ZHX ex1.5 Spi transmission and reception of the three accelerometer reading and the 3 gyro readings
+    //ZHX ex1.5 Spi transmission and reception of the three accelerometer reading and the 3 gyro readings
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
     SpibRegs.SPIFFRX.bit.RXFFIL = 8;
     SpibRegs.SPITXBUF = 0xBA00;
@@ -870,14 +870,14 @@ __interrupt void SWI_isr(void) {
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
     asm("       NOP");                    // Wait one cycle
     EINT;                                 // Clear INTM to enable interrupts
-  //ZHX ex3 the transfer function is 125s/(s+125), and the discrete transfer function is（100z-100)/(z-0.6)=Y(z)/V(z)
+    //ZHX ex3 the transfer function is 125s/(s+125), and the discrete transfer function is（100z-100)/(z-0.6)=Y(z)/V(z)
     vel_Right = 0.6*vel_Right_1 + 100*(RightWheel - RightWheelPrev);
     vel_Left = 0.6*vel_Left_1 + 100*(LeftWheel - LeftWheelPrev);
 
     gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
-//ZHX ex3 the state feedback controller equation is u=-kx states are tile,gyro,average of left and right motor velocities and gyrorate_dot
+    //ZHX ex3 the state feedback controller equation is u=-kx states are tile,gyro,average of left and right motor velocities and gyrorate_dot
     ubal= -K_1*tilt_value-K_2*gyro_value - K_3*(vel_Left+vel_Right)/2.0-K_4*gyrorate_dot;
-//ZHX ex3 ubal is controleffort for both motors
+    //ZHX ex3 ubal is controleffort for both motors
     //    uLeft=ubal/2;
     //    uRight=ubal/2;
     //JLS: variables for Lab 7, exercise 4
@@ -892,7 +892,7 @@ __interrupt void SWI_isr(void) {
     if(fabs(turn)>3){ // ZSK: if statement used to protect from integral windup
         intDiff = intDiff_1;
     }
-  // ZHX ex4 saturate turn between -4 and 4
+    // ZHX ex4 saturate turn between -4 and 4
     if (turn>4){
         turn=4;
     }
@@ -908,11 +908,11 @@ __interrupt void SWI_isr(void) {
     eSpeed = ( Segbot_refSpeed  - WhlSpeedAvg );
     IK_eSpeed = IK_eSpeed_1 + 0.004*(eSpeed + eSpeed_1)/2;
     ForwardBackwardCommand = KpSpeed*eSpeed + KiSpeed*IK_eSpeed;
-  //ZHX ex5 saturate IK_eSpeed at its current value when absolutue value of ForwardBackwardCommand is larger than 3
+    //ZHX ex5 saturate IK_eSpeed at its current value when absolutue value of ForwardBackwardCommand is larger than 3
     if(fabs(ForwardBackwardCommand) > 3){
         IK_eSpeed=IK_eSpeed_1;
     }
-  // ZHx ex5 saturate ForwardBackwardCommand between -4 and 4.
+    // ZHx ex5 saturate ForwardBackwardCommand between -4 and 4.
     if (ForwardBackwardCommand>4){
         ForwardBackwardCommand=4;
     }
@@ -945,7 +945,7 @@ __interrupt void SWI_isr(void) {
 
     IK_eSpeed_1 = IK_eSpeed;
     eSpeed_1 = eSpeed;
-//ZHX ex5 copy fron interrupt function from lab 6(kinematic equations + communication with labview)
+    //ZHX ex5 copy fron interrupt function from lab 6(kinematic equations + communication with labview)
     theta_l=LeftWheel;
     theta_r=RightWheel;
     bearing=R_Wh/W_R*(theta_r-theta_l);
@@ -961,6 +961,7 @@ __interrupt void SWI_isr(void) {
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
     y_dot_prev=y_dot;
+    // ZHX ex5  press 'q', turn+0.05. press 'r', turn-0.05. press '3', Vref+0.1. press's', Vref-0.1.
 
     if (NewLVData == 1) {
         NewLVData = 0;
@@ -968,7 +969,7 @@ __interrupt void SWI_isr(void) {
         Segbot_refSpeed = fromLVvalues[0];
 
         //Vref = fromLVvalues[0];
-      
+
         // ZHX ex6 first 2 values send from labview is Vref and turn
         //Vref = fromLVvalues[0];
 
@@ -1501,7 +1502,7 @@ int16_t spivalue3 = 0;
 
 //JLS: SPIB_ISR; contains critical data for locomotion / balancing
 __interrupt void SPIB_isr(void) {
-  //ZHX ex1.6 pull the MPU-9250's slave select high
+    //ZHX ex1.6 pull the MPU-9250's slave select high
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     spivalue1 = SpibRegs.SPIRXBUF;
     accelx_raw = SpibRegs.SPIRXBUF;
@@ -1521,7 +1522,7 @@ __interrupt void SPIB_isr(void) {
     gyroz = gyroz_raw*(250.0/32767.0);
 
     //Code to be copied into SPIB_ISR interrupt function after the IMU measurements have been collected.
-  // ZHX ex2 in the first 4 seconds, calculating the costant offsets of the three accelerometers and the three rate gyros
+    // ZHX ex2 in the first 4 seconds, calculating the costant offsets of the three accelerometers and the three rate gyros
     if(calibration_state == 0){
         calibration_count++;
         if (calibration_count == 2000) {
@@ -1529,7 +1530,7 @@ __interrupt void SPIB_isr(void) {
             calibration_count = 0;
         }
     } else if(calibration_state == 1) {
-      // ZHX ex2 summing up each reading recieved
+        // ZHX ex2 summing up each reading recieved
         accelx_offset+=accelx;
         accely_offset+=accely;
         accelz_offset+=accelz;
@@ -1538,7 +1539,7 @@ __interrupt void SPIB_isr(void) {
         gyroz_offset+=gyroz;
         calibration_count++;
         if (calibration_count == 2000) {
-          //ZHX ex2 divied the summed varible by 2000 to find the average offset over 2 second
+            //ZHX ex2 divied the summed varible by 2000 to find the average offset over 2 second
             calibration_state = 2;
             accelx_offset/=2000.0;
             accely_offset/=2000.0;
@@ -1550,7 +1551,7 @@ __interrupt void SPIB_isr(void) {
             doneCal = 1;
         }
     } else if(calibration_state == 2) {
-      // ZHX after the 4 seconds, the offset calibration is complete
+        // ZHX after the 4 seconds, the offset calibration is complete
         accelx -=(accelx_offset);
         accely -=(accely_offset);
         accelz -=(accelz_offset-accelzBalancePoint);
