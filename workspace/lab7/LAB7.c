@@ -870,14 +870,14 @@ __interrupt void SWI_isr(void) {
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP12;
     asm("       NOP");                    // Wait one cycle
     EINT;                                 // Clear INTM to enable interrupts
-
+  //ZHX ex3 the transfer function is 125s/(s+125), and the discrete transfer function is（100z-100)/(z-0.6)=Y(z)/V(z)
     vel_Right = 0.6*vel_Right_1 + 100*(RightWheel - RightWheelPrev);
     vel_Left = 0.6*vel_Left_1 + 100*(LeftWheel - LeftWheelPrev);
 
     gyrorate_dot=0.6*gyrorate_dot_1+100*(gyro_value-gyro_value_1);
-
+//ZHX ex3 the state feedback controller equation is u=-kx states are tile,gyro,average of left and right motor velocities and gyrorate_dot
     ubal= -K_1*tilt_value-K_2*gyro_value - K_3*(vel_Left+vel_Right)/2.0-K_4*gyrorate_dot;
-
+//ZHX ex3 ubal is controleffort for both motors
     //    uLeft=ubal/2;
     //    uRight=ubal/2;
     //JLS: variables for Lab 7, exercise 4
@@ -892,7 +892,7 @@ __interrupt void SWI_isr(void) {
     if(fabs(turn)>3){ // ZSK: if statement used to protect from integral windup
         intDiff = intDiff_1;
     }
-
+  // ZHX ex4 saturate turn between -4 and 4
     if (turn>4){
         turn=4;
     }
@@ -908,10 +908,11 @@ __interrupt void SWI_isr(void) {
     eSpeed = ( Segbot_refSpeed  - WhlSpeedAvg );
     IK_eSpeed = IK_eSpeed_1 + 0.004*(eSpeed + eSpeed_1)/2;
     ForwardBackwardCommand = KpSpeed*eSpeed + KiSpeed*IK_eSpeed;
-
+  //ZHX ex5 saturate IK_eSpeed at its current value when absolutue value of ForwardBackwardCommand is larger than 3
     if(fabs(ForwardBackwardCommand) > 3){
         IK_eSpeed=IK_eSpeed_1;
     }
+  // ZHx ex5 saturate ForwardBackwardCommand between -4 and 4.
     if (ForwardBackwardCommand>4){
         ForwardBackwardCommand=4;
     }
@@ -919,7 +920,7 @@ __interrupt void SWI_isr(void) {
         ForwardBackwardCommand=-4;
     }
 
-    uRight=ubal/2.0 - turn - ForwardBackwardCommand;
+    uRight = ubal/2.0 - turn - ForwardBackwardCommand;
     uLeft = ubal/2.0 + turn - ForwardBackwardCommand;
 
 
@@ -944,7 +945,7 @@ __interrupt void SWI_isr(void) {
 
     IK_eSpeed_1 = IK_eSpeed;
     eSpeed_1 = eSpeed;
-
+//ZHX ex5 copy fron interrupt function from lab 6(kinematic equations + communication with labview)
     theta_l=LeftWheel;
     theta_r=RightWheel;
     bearing=R_Wh/W_R*(theta_r-theta_l);
@@ -956,7 +957,6 @@ __interrupt void SWI_isr(void) {
     y_dot=R_Wh*theta_ave_dot*sin(bearing);
 
     //ZHX ex6 Using trapezoidal rule
-
     x=x+0.5*0.004*(x_dot+x_dot_prev);
     y=y+0.5*0.004*(y_dot+y_dot_prev);
     x_dot_prev=x_dot;
@@ -981,7 +981,7 @@ __interrupt void SWI_isr(void) {
         printLV8 = fromLVvalues[7];
     }
 
-    if((numSWIcalls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+    if((numSWIcalls%62) == 0) { // change to the counter variable of you selected 4ms. timer (SWI_isr function)
 
         // ZHX ex5 first 3 values send from board to labview ia x,y and bearing
 
