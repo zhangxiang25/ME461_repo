@@ -627,7 +627,7 @@ void main(void)
 
     EPwm9Regs.TBPRD=0; //EEC - Sets the period to zero. 
 // ZHX EX4 in order to pruduce varied frequency signal,we comment out the intialization of CMPA rigister
-    // EPwm9Regs.CMPA.bit.CMPA=0;
+    EPwm9Regs.CMPA.bit.CMPA=0;
 
     EPwm9Regs.AQCTLA.bit.CAU=0; // ZHX EX4 when CMPA is reached, no action is needed
     EPwm9Regs.AQCTLA.bit.ZRO=3; // ZHX EX4 when TBCTR=0, set to 3 to toggle the LOW or HIGH output of the PMW. This is to show on the oscilliscope the operation signal
@@ -751,6 +751,7 @@ __interrupt void cpu_timer1_isr(void)
 	    GPIO_SetupPinMux(16,GPIO_MUX_CPU1,0);// ZHX EX4 when the song ended,change the pin from EPWM9A to GPIO16
 	    GpioDataRegs.GPACLEAR.bit.GPIO16=1; // ZHX EX4 Set GPIO16 to low so the buzzer does not make any noise
 	}
+
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
